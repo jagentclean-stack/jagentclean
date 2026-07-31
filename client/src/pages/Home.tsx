@@ -67,7 +67,7 @@ export default function Home() {
                 className="flex flex-col sm:flex-row justify-center items-center"
                 style={{ gap: '20px', marginBottom: '40px' }}
               >
-                <Link href="/contact">
+                <a href="/contact">
                   <Button 
                     className="soft-shadow hover:scale-105 transition-transform duration-300 bg-primary hover:bg-primary/90 text-white rounded-full"
                     style={{
@@ -83,7 +83,7 @@ export default function Home() {
                   >
                     📅 立即預約免費諮詢
                   </Button>
-                </Link>
+                </a>
                 <a href="https://lin.ee/ynvoHjh" target="_blank" rel="noopener noreferrer">
                   <Button 
                     variant="outline"
@@ -102,7 +102,7 @@ export default function Home() {
                     📋 獲取免費報價
                   </Button>
                 </a>
-                <Link href="/services">
+                <a href="/services">
                   <Button 
                     variant="outline"
                     className="soft-shadow hover:scale-105 transition-transform duration-300 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full"
@@ -119,7 +119,7 @@ export default function Home() {
                   >
                     🏢 了解更多服務項目
                   </Button>
-                </Link>
+                </a>
               </div>
             </AnimatedSection>
           </div>
@@ -207,7 +207,7 @@ export default function Home() {
                 <p className="text-lg text-gray-800 leading-relaxed">
                   我們的團隊由一群訓練有素、經驗豐富的「清潔特務」組成，他們不僅掌握最先進的清潔技術，更秉持著嚴謹細緻的服務態度。
                 </p>
-                <Link href="/about">
+                <a href="/about">
                   <Button 
                     variant="secondary" 
                     className="mt-8 soft-shadow hover:scale-105 transition-transform duration-300"
@@ -221,7 +221,7 @@ export default function Home() {
                   >
                     了解更多關於我們
                   </Button>
-                </Link>
+                </a>
               </div>
             </AnimatedSection>
             <AnimatedSection delay={100}>
