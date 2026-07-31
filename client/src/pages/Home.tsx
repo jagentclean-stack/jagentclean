@@ -33,7 +33,7 @@ export default function Home() {
         {/* Hero Content - 垂直置中 */}
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="w-full px-6 lg:px-8" style={{ maxWidth: '900px' }}>
-            {/* 主標題 - 兩行，64-72px */}
+            {/* 主標題 - 三行，64-72px */}
             <AnimatedSection>
               <h1 
                 className="text-black font-bold leading-tight mb-8"
@@ -43,16 +43,16 @@ export default function Home() {
                   letterSpacing: '-0.03em'
                 }}
               >
-                潔特務清潔：<br />專業、高效、值得信賴
+                潔特務清潔：專業、高效、<br />值得信賴的企業級<br />清潔服務
               </h1>
             </AnimatedSection>
 
             {/* 副標題 - 與主標間距 32px */}
             <AnimatedSection delay={100}>
               <p 
-                className="text-black font-light mb-10"
+                className="text-gray-600 font-light mb-10"
                 style={{
-                  fontSize: '18px',
+                  fontSize: '16px',
                   lineHeight: '1.6',
                   marginBottom: '32px'
                 }}
@@ -69,46 +69,55 @@ export default function Home() {
               >
                 <Link href="/contact">
                   <Button 
-                    className="soft-shadow hover:scale-105 transition-transform duration-300 bg-secondary hover:bg-secondary/90 text-white"
+                    className="soft-shadow hover:scale-105 transition-transform duration-300 bg-primary hover:bg-primary/90 text-white rounded-full"
                     style={{
                       height: '56px',
                       paddingLeft: '28px',
                       paddingRight: '28px',
                       fontSize: '16px',
-                      fontWeight: '600'
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
                   >
-                    立即預約免費諮詢
+                    📅 立即預約免費諮詢
                   </Button>
                 </Link>
                 <a href="https://lin.ee/ynvoHjh" target="_blank" rel="noopener noreferrer">
                   <Button 
                     variant="outline"
-                    className="soft-shadow hover:scale-105 transition-transform duration-300 border-2 border-black text-black hover:bg-black hover:text-white"
+                    className="soft-shadow hover:scale-105 transition-transform duration-300 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full"
                     style={{
                       height: '56px',
                       paddingLeft: '28px',
                       paddingRight: '28px',
                       fontSize: '16px',
-                      fontWeight: '600'
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
                   >
-                    獲取免費報價
+                    📋 獲取免費報價
                   </Button>
                 </a>
                 <Link href="/services">
                   <Button 
                     variant="outline"
-                    className="soft-shadow hover:scale-105 transition-transform duration-300 border-2 border-black text-black hover:bg-black hover:text-white"
+                    className="soft-shadow hover:scale-105 transition-transform duration-300 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full"
                     style={{
                       height: '56px',
                       paddingLeft: '28px',
                       paddingRight: '28px',
                       fontSize: '16px',
-                      fontWeight: '600'
+                      fontWeight: '600',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
                   >
-                    了解更多
+                    🏢 了解更多服務項目
                   </Button>
                 </Link>
               </div>

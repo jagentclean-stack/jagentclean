@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 
 interface ServiceCardProps {
@@ -9,15 +9,26 @@ interface ServiceCardProps {
 
 export default function ServiceCard({ icon: Icon, title, description }: ServiceCardProps) {
   return (
-    <Card className="glassmorphism soft-shadow hover:scale-[1.02] hover:shadow-lg transition-all duration-300 ease-out group">
-      <CardHeader className="flex flex-row items-center space-x-4 pb-2">
-        <div className="p-3 rounded-full bg-secondary/20 text-secondary group-hover:bg-secondary/30 transition-colors duration-300">
-          <Icon className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
+    <Card className="border-0 bg-white soft-shadow hover:shadow-lg transition-all duration-300 ease-out group">
+      <CardContent className="p-8 flex flex-col items-start space-y-6">
+        {/* 圓形綠色背景圖標 */}
+        <div 
+          className="rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300"
+          style={{
+            width: '80px',
+            height: '80px',
+            backgroundColor: '#E8F5E9', // 淺綠色背景
+            color: '#8CC63F' // 萊姆綠
+          }}
+        >
+          <Icon className="h-10 w-10" />
         </div>
-        <CardTitle className="text-xl font-semibold text-primary">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground text-base leading-relaxed">{description}</p>
+        
+        {/* 標題 */}
+        <h3 className="text-xl font-bold text-primary">{title}</h3>
+        
+        {/* 描述 */}
+        <p className="text-gray-600 text-base leading-relaxed">{description}</p>
       </CardContent>
     </Card>
   );

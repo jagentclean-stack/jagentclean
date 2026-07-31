@@ -1,9 +1,9 @@
-import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Calendar } from "lucide-react";
 import ThemeToggleButton from "./ThemeToggleButton";
+import { Link } from "wouter";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,7 +17,6 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // 管理 body overflow 和 menu-open class
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -37,51 +36,85 @@ export default function Header() {
     setIsOpen(false);
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    // 只在點擊 Overlay 本身時關閉，不在 Drawer 上點擊時關閉
-    if (e.target === e.currentTarget) {
-      handleCloseMenu();
-    }
-  };
-
   return (
     <header
-      className={`fixed w-full z-50 transition-all duration-300 h-16 lg:h-22 ${scrolled ? "bg-background/80 backdrop-blur-md soft-shadow" : "bg-transparent"}`}
+      className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? "bg-white/95 backdrop-blur-md shadow-md" : "bg-white"}`}
+      style={{ height: '88px' }}
     >
-      <div className="container mx-auto flex items-center justify-between h-16 lg:h-22 lg:px-8 px-4" style={{ maxWidth: '1400px' }}>
+      <div 
+        className="container mx-auto flex items-center justify-between px-6 lg:px-8 h-full"
+        style={{ maxWidth: '1400px' }}
+      >
+        {/* Logo 和品牌名稱 - 左側 */}
         <Link href="/">
-          <a className="flex items-center space-x-2">
+          <a className="flex items-center gap-3 flex-shrink-0">
             <img 
-              src="/manus-storage/jagent-logo-transparent_4f3234a5.png" 
+              src="/manus-storage/1785467843786_6a67b85c.jpg" 
               alt="J-Agent Cleaning Logo" 
-              className="h-10 w-auto lg:h-12" 
+              className="h-12 w-auto"
             />
-            <span className="text-xl font-bold text-primary hidden sm:inline">潔特務清潔</span>
+            <div className="hidden sm:flex flex-col">
+              <span className="text-sm font-semibold text-primary">J-Agent Cleaning</span>
+              <span className="text-xs text-gray-600">潔特務清潔</span>
+            </div>
           </a>
         </Link>
 
-        <nav className="hidden lg:flex items-center" style={{ gap: '48px' }}>
+        {/* 導覽菜單 - 中央 */}
+        <nav className="hidden lg:flex items-center gap-12 flex-1 justify-center">
           <Link href="/services">
-            <a className="text-primary hover:text-secondary transition-colors duration-200">服務項目</a>
+            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+              服務項目
+            </a>
           </Link>
           <Link href="/about">
-            <a className="text-primary hover:text-secondary transition-colors duration-200">關於我們</a>
+            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+              關於我們
+            </a>
           </Link>
           <Link href="/process">
-            <a className="text-primary hover:text-secondary transition-colors duration-200">清潔流程</a>
+            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+              清潔流程
+            </a>
           </Link>
           <Link href="/testimonials">
-            <a className="text-primary hover:text-secondary transition-colors duration-200">客戶評價</a>
+            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+              客戶評價
+            </a>
           </Link>
           <Link href="/faq">
-            <a className="text-primary hover:text-secondary transition-colors duration-200">常見問題</a>
+            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+              常見問題
+            </a>
           </Link>
-          <Button variant="default" className="ml-4">立即預約</Button>
-          <ThemeToggleButton />
         </nav>
 
-        {/* 手機版漢堡選單 - 置中對齊 */}
-        <div className="lg:hidden flex items-center justify-center">
+        {/* 右側：預約按鈕 + Dark Mode - 右側 */}
+        <div className="hidden lg:flex items-center gap-4">
+          <Link href="/contact">
+            <a>
+              <Button 
+                className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-full"
+                style={{
+                  height: '44px',
+                  paddingLeft: '24px',
+                  paddingRight: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Calendar className="h-4 w-4" />
+                立即預約
+              </Button>
+            </a>
+          </Link>
+          <ThemeToggleButton />
+        </div>
+
+        {/* 手機版：漢堡選單 + Dark Mode - 右側 */}
+        <div className="lg:hidden flex items-center gap-2">
+          <ThemeToggleButton />
           <Button 
             variant="ghost" 
             size="icon" 
@@ -93,23 +126,21 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 不顯示 Overlay，直接進入 Drawer */}
-
-      {/* 右側 Drawer 菜單 */}
+      {/* 右側 Drawer 菜單 - 手機版 */}
       {isOpen && (
         <div
-          className="fixed top-0 right-0 h-screen w-64 bg-background/95 backdrop-blur-md soft-shadow lg:hidden z-45 transition-transform duration-300"
+          className="fixed top-0 right-0 h-screen w-64 bg-white shadow-lg lg:hidden z-45"
           style={{
             transform: isOpen ? "translateX(0)" : "translateX(100%)",
             transition: "transform 300ms ease-in-out",
-            marginTop: "64px",
-            height: "calc(100vh - 64px)",
+            marginTop: "88px",
+            height: "calc(100vh - 88px)",
           }}
         >
           <nav className="flex flex-col items-start space-y-4 p-6">
             <Link href="/services">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
+                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
                 onClick={handleCloseMenu}
               >
                 服務項目
@@ -117,7 +148,7 @@ export default function Header() {
             </Link>
             <Link href="/about">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
+                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
                 onClick={handleCloseMenu}
               >
                 關於我們
@@ -125,7 +156,7 @@ export default function Header() {
             </Link>
             <Link href="/process">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
+                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
                 onClick={handleCloseMenu}
               >
                 清潔流程
@@ -133,7 +164,7 @@ export default function Header() {
             </Link>
             <Link href="/testimonials">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
+                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
                 onClick={handleCloseMenu}
               >
                 客戶評價
@@ -141,16 +172,29 @@ export default function Header() {
             </Link>
             <Link href="/faq">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
+                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
                 onClick={handleCloseMenu}
               >
                 常見問題
               </a>
             </Link>
-            <Button variant="default" className="w-full mt-4" onClick={handleCloseMenu}>立即預約</Button>
-            <div className="w-full mt-6 pt-6 border-t border-border">
-              <ThemeToggleButton mobile />
-            </div>
+            <Link href="/contact">
+              <a onClick={handleCloseMenu}>
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold rounded-full mt-4"
+                  style={{
+                    height: '44px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Calendar className="h-4 w-4" />
+                  立即預約
+                </Button>
+              </a>
+            </Link>
           </nav>
         </div>
       )}
