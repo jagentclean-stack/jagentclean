@@ -79,7 +79,8 @@ export default function Home() {
                       fontWeight: '600',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      gap: '8px',
+                      color: '#ffffff'
                     }}
                   >
                     📅 立即預約免費諮詢
