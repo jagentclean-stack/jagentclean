@@ -37,19 +37,26 @@ export default function Header() {
     setIsOpen(false);
   };
 
-  const handleOverlayClick = () => {
-    handleCloseMenu();
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    // 只在點擊 Overlay 本身時關閉，不在 Drawer 上點擊時關閉
+    if (e.target === e.currentTarget) {
+      handleCloseMenu();
+    }
   };
 
   return (
     <header
-      className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? "bg-background/80 backdrop-blur-md soft-shadow" : "bg-transparent"}`}
+      className={`fixed w-full z-50 transition-all duration-300 h-16 lg:h-auto ${scrolled ? "bg-background/80 backdrop-blur-md soft-shadow" : "bg-transparent"}`}
     >
-      <div className="container mx-auto flex items-center justify-between py-4 px-4 lg:px-8">
+      <div className="container mx-auto flex items-center justify-between h-16 lg:h-auto lg:py-4 px-4 lg:px-8">
         <Link href="/">
           <a className="flex items-center space-x-2">
-            <img src="/manus-storage/jagent-logo_49bbfe06.png" alt="J-Agent Cleaning Logo" className="h-10 w-10" />
-            <span className="text-xl font-bold text-primary">潔特務清潔</span>
+            <img 
+              src="/manus-storage/1785467843786_6a67b85c.jpg" 
+              alt="J-Agent Cleaning Logo" 
+              className="h-10 w-auto lg:h-12" 
+            />
+            <span className="text-xl font-bold text-primary hidden sm:inline">潔特務清潔</span>
           </a>
         </Link>
 
@@ -73,7 +80,8 @@ export default function Header() {
           <ThemeToggleButton />
         </nav>
 
-        <div className="lg:hidden">
+        {/* 手機版漢堡選單 - 置中對齊 */}
+        <div className="lg:hidden flex items-center justify-center">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -85,43 +93,33 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Overlay - 完全控制透明度、指針事件和顯示 */}
+      {/* Overlay - 完全移除，不殘留 */}
       {isOpen && (
         <div
-          className={`fixed inset-0 bg-black/50 lg:hidden transition-all duration-300 ${
-            isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          }`}
+          className="fixed inset-0 bg-black/50 lg:hidden z-40 transition-opacity duration-300"
           style={{
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: isOpen ? "rgba(0, 0, 0, 0.5)" : "rgba(0, 0, 0, 0)",
-            pointerEvents: isOpen ? "auto" : "none",
             opacity: isOpen ? 1 : 0,
-            zIndex: 40,
+            pointerEvents: isOpen ? "auto" : "none",
           }}
           onClick={handleOverlayClick}
         />
       )}
 
-      {/* Mobile Menu */}
+      {/* 右側 Drawer 菜單 */}
       {isOpen && (
         <div
-          className={`fixed top-16 left-0 right-0 bg-background/95 backdrop-blur-md soft-shadow py-4 px-4 lg:hidden transition-all duration-300 z-45 ${
-            isOpen ? "animate-in fade-in slide-in-from-top-2" : "animate-out fade-out slide-out-to-top-2"
-          }`}
+          className="fixed top-0 right-0 h-screen w-64 bg-background/95 backdrop-blur-md soft-shadow lg:hidden z-45 transition-transform duration-300"
           style={{
-            display: isOpen ? "block" : "none",
-            opacity: isOpen ? 1 : 0,
-            transform: isOpen ? "translateY(0)" : "translateY(-100%)",
-            transition: "all 300ms ease-in-out",
+            transform: isOpen ? "translateX(0)" : "translateX(100%)",
+            transition: "transform 300ms ease-in-out",
+            marginTop: "64px",
+            height: "calc(100vh - 64px)",
           }}
         >
-          <nav className="flex flex-col items-center space-y-4">
+          <nav className="flex flex-col items-start space-y-4 p-6">
             <Link href="/services">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200" 
+                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
                 onClick={handleCloseMenu}
               >
                 服務項目
@@ -129,7 +127,7 @@ export default function Header() {
             </Link>
             <Link href="/about">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200" 
+                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
                 onClick={handleCloseMenu}
               >
                 關於我們
@@ -137,7 +135,7 @@ export default function Header() {
             </Link>
             <Link href="/process">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200" 
+                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
                 onClick={handleCloseMenu}
               >
                 清潔流程
@@ -145,7 +143,7 @@ export default function Header() {
             </Link>
             <Link href="/testimonials">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200" 
+                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
                 onClick={handleCloseMenu}
               >
                 客戶評價
@@ -153,14 +151,16 @@ export default function Header() {
             </Link>
             <Link href="/faq">
               <a 
-                className="text-primary hover:text-secondary transition-colors duration-200" 
+                className="text-primary hover:text-secondary transition-colors duration-200 w-full" 
                 onClick={handleCloseMenu}
               >
                 常見問題
               </a>
             </Link>
-            <Button variant="default" className="mt-4" onClick={handleCloseMenu}>立即預約</Button>
-            <ThemeToggleButton mobile />
+            <Button variant="default" className="w-full mt-4" onClick={handleCloseMenu}>立即預約</Button>
+            <div className="w-full mt-6 pt-6 border-t border-border">
+              <ThemeToggleButton mobile />
+            </div>
           </nav>
         </div>
       )}
