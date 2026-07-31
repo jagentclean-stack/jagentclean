@@ -37,7 +37,7 @@
 - [x] CMS Dashboard 主頁面 - 統計資訊與快速導航
 - [ ] Pages 管理頁面
 - [x] Services 管理頁面
-- [ ] Cases 管理頁面
+- [x] Cases 管理頁面
 - [ ] Blogs 管理頁面
 - [x] Bookings 管理頁面
 - [x] Contacts 管理頁面
@@ -45,7 +45,7 @@
 - [ ] Settings 管理頁面
 - [ ] SEO 管理頁面
 - [ ] Menus 管理頁面
-- [ ] FAQs 管理頁面
+- [x] FAQs 管理頁面
 
 ## 前台動態化
 - [ ] 首頁內容從資料庫讀取

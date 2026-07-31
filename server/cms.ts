@@ -350,6 +350,132 @@ export const cmsRouter = router({
   }),
 
   /**
+   * Cases Management
+   */
+  cases: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        throw new Error("Unauthorized");
+      }
+      return db.getAllCases();
+    }),
+
+    getBySlug: protectedProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        return db.getCaseBySlug(input.slug);
+      }),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          name: z.string(),
+          slug: z.string(),
+          location: z.string().optional(),
+          description: z.string().optional(),
+          beforeImage: z.string().optional(),
+          afterImage: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin")) {
+          throw new Error("Unauthorized");
+        }
+        return db.createCase(input as any);
+      }),
+
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          slug: z.string().optional(),
+          location: z.string().optional(),
+          description: z.string().optional(),
+          beforeImage: z.string().optional(),
+          afterImage: z.string().optional(),
+          isPublished: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateCase(id, data as any);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin")) {
+          throw new Error("Unauthorized");
+        }
+        return db.deleteCase(input.id);
+      }),
+  }),
+
+  /**
+   * FAQs Management
+   */
+  faqs: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        throw new Error("Unauthorized");
+      }
+      return db.getAllFAQs();
+    }),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          question: z.string(),
+          answer: z.string(),
+          category: z.string().optional(),
+          order: z.number().default(0),
+          isVisible: z.boolean().default(true),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        return db.createFAQ(input as any);
+      }),
+
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          question: z.string().optional(),
+          answer: z.string().optional(),
+          category: z.string().optional(),
+          order: z.number().optional(),
+          isVisible: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateFAQ(id, data as any);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin")) {
+          throw new Error("Unauthorized");
+        }
+        return db.deleteFAQ(input.id);
+      }),
+  }),
+
+  /**
    * SEO Management
    */
   seo: router({
