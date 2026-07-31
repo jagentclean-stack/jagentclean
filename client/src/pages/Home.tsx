@@ -38,9 +38,10 @@ export default function Home() {
               <h1 
                 className="text-black font-bold leading-tight mb-8"
                 style={{
-                  fontSize: 'clamp(48px, 8vw, 72px)',
+                  fontSize: '50px',
                   lineHeight: '1.1',
-                  letterSpacing: '-0.03em'
+                  letterSpacing: '-0.03em',
+                  fontWeight: '600'
                 }}
               >
                 潔特務清潔：專業、高效、<br />值得信賴的企業級<br />清潔服務
