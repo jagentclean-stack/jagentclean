@@ -46,9 +46,9 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed w-full z-50 transition-all duration-300 h-16 lg:h-auto ${scrolled ? "bg-background/80 backdrop-blur-md soft-shadow" : "bg-transparent"}`}
+      className={`fixed w-full z-50 transition-all duration-300 h-16 lg:h-22 ${scrolled ? "bg-background/80 backdrop-blur-md soft-shadow" : "bg-transparent"}`}
     >
-      <div className="container mx-auto flex items-center justify-between h-16 lg:h-auto lg:py-4 px-4 lg:px-8">
+      <div className="container mx-auto flex items-center justify-between h-16 lg:h-22 lg:px-8 px-4" style={{ maxWidth: '1400px' }}>
         <Link href="/">
           <a className="flex items-center space-x-2">
             <img 
@@ -60,7 +60,7 @@ export default function Header() {
           </a>
         </Link>
 
-        <nav className="hidden lg:flex items-center space-x-8">
+        <nav className="hidden lg:flex items-center" style={{ gap: '48px' }}>
           <Link href="/services">
             <a className="text-primary hover:text-secondary transition-colors duration-200">服務項目</a>
           </Link>
