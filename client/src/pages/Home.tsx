@@ -70,7 +70,7 @@ export default function Home() {
               >
                 <a href="/contact">
                   <Button 
-                    className="soft-shadow hover:scale-105 transition-transform duration-300 bg-primary hover:bg-primary/90 text-white rounded-full"
+                    className="soft-shadow hover:scale-105 transition-transform duration-300 rounded-full"
                     style={{
                       height: '56px',
                       paddingLeft: '28px',
@@ -80,6 +80,7 @@ export default function Home() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
+                      backgroundColor: '#163C72',
                       color: '#ffffff'
                     }}
                   >
