@@ -35,7 +35,7 @@
 
 ## 前端頁面開發
 - [x] CMS Dashboard 主頁面 - 統計資訊與快速導航
-- [ ] Pages 管理頁面
+- [x] Pages 管理頁面
 - [x] Services 管理頁面
 - [x] Cases 管理頁面
 - [x] Blogs 管理頁面

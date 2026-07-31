@@ -24,6 +24,7 @@ import CMSCases from "./pages/CMSCases";
 import CMSFAQs from "./pages/CMSFAQs";
 import CMSBlogs from "./pages/CMSBlogs";
 import CMSSettings from "./pages/CMSSettings";
+import CMSPages from "./pages/CMSPages";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -46,6 +47,7 @@ function Router() {
       <Route path={"/cms/faqs"} component={CMSFAQs} />
       <Route path={"/cms/blogs"} component={CMSBlogs} />
       <Route path={"/cms/settings"} component={CMSSettings} />
+      <Route path={"/cms/pages"} component={CMSPages} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
