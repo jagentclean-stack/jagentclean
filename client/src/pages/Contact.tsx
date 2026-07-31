@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -24,33 +25,22 @@ export default function Contact() {
     }));
   };
 
+  const sendEmailMutation = trpc.contact.sendEmail.useMutation();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // 發送郵件到 jagentclean@gmail.com
-      const response = await fetch("/api/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          to: "jagentclean@gmail.com",
-          from: formData.email,
-          subject: `潔特務清潔聯繫表單：${formData.subject}`,
-          name: formData.name,
-          email: formData.email,
-          message: formData.message,
-        }),
+      await sendEmailMutation.mutateAsync({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
       });
 
-      if (response.ok) {
-        toast.success("訊息已成功發送！我們將盡快回覆您。");
-        setFormData({ name: "", email: "", subject: "", message: "" });
-      } else {
-        toast.error("發送失敗，請稍後重試。");
-      }
+      toast.success("訊息已成功發送！我們將盡快回覆您。");
+      setFormData({ name: "", email: "", subject: "", message: "" });
     } catch (error) {
       console.error("Error sending email:", error);
       toast.error("發送失敗，請稍後重試。");

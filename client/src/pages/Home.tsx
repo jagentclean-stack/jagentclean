@@ -1,3 +1,4 @@
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import ServiceCard from "@/components/ServiceCard";
@@ -12,6 +13,13 @@ import CTASection from "@/components/CTASection";
 
 
 export default function Home() {
+  // The useAuth hook provides authentication state.
+  // To implement login/logout, call logout(), or start login from an event
+  // handler: onClick={() => startLogin()} (imported from "@/const"). Never call
+  // startLogin() during render (no href={startLogin()}) — it mints a one-time
+  // nonce cookie and must run only at the moment of navigation.
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center text-center overflow-hidden">
       {/* Hero Background Image with Parallax Effect */}
@@ -27,14 +35,14 @@ export default function Home() {
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/70 to-primary/90"></div>
 
-      <div className="relative z-10 text-white p-8 max-w-4xl mx-auto space-y-6">
+      <div className="relative z-10 p-8 max-w-4xl mx-auto space-y-6">
         <AnimatedSection>
-          <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-4">
+          <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-4 text-black">
             潔特務清潔：專業、高效、值得信賴的企業級清潔服務
           </h1>
         </AnimatedSection>
         <AnimatedSection delay={100}>
-          <p className="text-lg md:text-xl font-light mb-8">
+          <p className="text-lg md:text-xl font-light mb-8 text-black">
             我們提供世界級的清潔解決方案，為您的企業打造一塵不染的專業環境。
           </p>
         </AnimatedSection>
@@ -45,8 +53,13 @@ export default function Home() {
                 立即預約免費諮詢
               </Button>
             </Link>
+            <a href="https://lin.ee/ynvoHjh" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="lg" className="soft-shadow hover:scale-105 transition-transform duration-300 border-black text-black hover:bg-black hover:text-white">
+                獲取免費報價
+              </Button>
+            </a>
             <Link href="/services">
-              <Button variant="outline" size="lg" className="soft-shadow hover:scale-105 transition-transform duration-300 border-white text-white hover:bg-white hover:text-primary">
+              <Button variant="outline" size="lg" className="soft-shadow hover:scale-105 transition-transform duration-300 border-black text-black hover:bg-black hover:text-white">
                 了解更多服務項目
               </Button>
             </Link>
