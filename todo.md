@@ -42,7 +42,7 @@
 - [x] Bookings 管理頁面
 - [x] Contacts 管理頁面
 - [x] Media 管理頁面
-- [ ] Settings 管理頁面
+- [x] Settings 管理頁面
 - [ ] SEO 管理頁面
 - [ ] Menus 管理頁面
 - [x] FAQs 管理頁面
