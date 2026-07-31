@@ -24,7 +24,7 @@ export default function Header() {
       <div className="container mx-auto flex items-center justify-between py-4 px-4 lg:px-8">
         <Link href="/">
           <a className="flex items-center space-x-2">
-            <img src="/manus-storage/brand-logo_0f07bc46.png" alt="J-Agent Cleaning Logo" className="h-8" />
+            <img src="/manus-storage/jagent-logo_49bbfe06.png" alt="J-Agent Cleaning Logo" className="h-10 w-10" />
             <span className="text-xl font-bold text-primary">潔特務清潔</span>
           </a>
         </Link>
