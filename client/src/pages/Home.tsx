@@ -228,7 +228,7 @@ export default function Home() {
             <AnimatedSection delay={100}>
               <div className="md:w-1/2 flex justify-center">
                 <img
-                  src="/manus-storage/service-professionalism_cd3ef70f.png"
+                  src="/manus-storage/jagent-cleaning-service_e8cbb29e.webp"
                   alt="About J-Agent Cleaning"
                   className="rounded-xl soft-shadow w-full max-w-md"
                   loading="lazy"
