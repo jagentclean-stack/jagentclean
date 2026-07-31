@@ -38,13 +38,13 @@ export default function Home() {
               <h1 
                 className="text-black font-bold leading-tight mb-8"
                 style={{
-                  fontSize: '50px',
-                  lineHeight: '1.1',
+                  fontSize: '64px',
+                  lineHeight: '1.2',
                   letterSpacing: '-0.03em',
-                  fontWeight: '600'
+                  fontWeight: '700'
                 }}
               >
-                潔特務清潔：專業、高效、<br />值得信賴的企業級<br />清潔服務
+                潔特務清潔：專業、高效、<br />值得信賴的企業級清潔服務
               </h1>
             </AnimatedSection>
 
