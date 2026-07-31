@@ -89,17 +89,17 @@ export default function Home() {
       </section>
 
       {/* About Us Section */}
-      <section className="relative z-10 w-full py-20 bg-muted">
+      <section className="relative z-10 w-full py-20 bg-white">
         <div className="container mx-auto px-4 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-12">
           <AnimatedSection>
             <div className="md:w-1/2 text-left space-y-6">
               <h2 className="text-4xl font-bold text-primary mb-4">
                 關於潔特務清潔
               </h2>
-              <p className="text-lg text-foreground leading-relaxed">
+              <p className="text-lg text-gray-800 leading-relaxed">
                 潔特務清潔致力於提供卓越的企業級清潔服務，我們深知一個潔淨、衛生的工作環境對於企業形象和員工生產力的重要性。憑藉多年的行業經驗和專業知識，我們為各行各業的客戶提供量身定制的清潔解決方案。
               </p>
-              <p className="text-lg text-foreground leading-relaxed">
+              <p className="text-lg text-gray-800 leading-relaxed">
                 我們的團隊由一群訓練有素、經驗豐富的「清潔特務」組成，他們不僅掌握最先進的清潔技術，更秉持著嚴謹細緻的服務態度。我們使用環保無毒的清潔產品和高效能設備，確保每一次服務都能達到最高標準，讓您的空間煥然一新。
               </p>
               <Link href="/about">

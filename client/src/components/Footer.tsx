@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Facebook, Instagram, Linkedin, Mail, Phone } from "lucide-react";
+import { Facebook, Mail, Phone, MessageCircle } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -18,14 +18,11 @@ export default function Footer() {
             提供專業、高品質、高信任感、高效率的企業級清潔服務，為您的空間帶來潔淨與舒適。
           </p>
           <div className="flex space-x-4">
-            <a href="#" aria-label="Facebook" className="hover:text-secondary hover:scale-125 transition-all duration-300">
+            <a href="https://www.facebook.com/Jagentclean" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="hover:text-secondary hover:scale-125 transition-all duration-300">
               <Facebook className="h-6 w-6" />
             </a>
-            <a href="#" aria-label="Instagram" className="hover:text-secondary hover:scale-125 transition-all duration-300">
-              <Instagram className="h-6 w-6" />
-            </a>
-            <a href="#" aria-label="LinkedIn" className="hover:text-secondary hover:scale-125 transition-all duration-300">
-              <Linkedin className="h-6 w-6" />
+            <a href="https://lin.ee/ynvoHjh" target="_blank" rel="noopener noreferrer" aria-label="LINE" className="hover:text-secondary hover:scale-125 transition-all duration-300">
+              <MessageCircle className="h-6 w-6" />
             </a>
           </div>
         </div>
@@ -68,14 +65,17 @@ export default function Footer() {
           <ul className="space-y-2">
             <li className="flex items-center space-x-2">
               <Phone className="h-5 w-5 text-secondary" />
-              <span>+886-2-1234-5678</span>
+              <a href="tel:06-3584567" className="hover:text-secondary transition-colors">06-3584567</a>
             </li>
             <li className="flex items-center space-x-2">
               <Mail className="h-5 w-5 text-secondary" />
-              <span>info@jagentcleaning.com</span>
+              <a href="mailto:jagentclean@gmail.com" className="hover:text-secondary transition-colors">jagentclean@gmail.com</a>
             </li>
             <li className="text-sm leading-relaxed">
-              地址：台北市信義區忠孝東路五段123號
+              地址：台南市安南區國安街45巷12號
+            </li>
+            <li className="text-sm leading-relaxed">
+              傳真：06-3583232
             </li>
           </ul>
         </div>
@@ -86,9 +86,11 @@ export default function Footer() {
           <p className="text-sm leading-relaxed">
             讓潔特務清潔為您的空間帶來煥然一新的體驗。
           </p>
-          <Button variant="secondary" className="soft-shadow hover:scale-110 hover:shadow-lg transition-all duration-300 w-full">
-            獲取免費報價
-          </Button>
+          <Link href="/contact">
+            <Button variant="secondary" className="soft-shadow hover:scale-110 hover:shadow-lg transition-all duration-300 w-full">
+              獲取免費報價
+            </Button>
+          </Link>
         </div>
       </div>
 
