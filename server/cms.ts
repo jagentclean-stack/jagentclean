@@ -580,6 +580,33 @@ export const cmsRouter = router({
         return db.updateSEO(id, data);
       }),
   }),
+
+  /**
+   * Users Management
+   */
+  users: router({
+    updateRole: protectedProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          role: z.enum(['admin', 'manager', 'customer_service', 'marketing', 'editor', 'user']),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        // 只允許 Admin 更新使用者角色
+        if (!checkRole(ctx.user?.role, 'admin')) {
+          throw new Error('Unauthorized');
+        }
+
+        const user = await db.getUserByEmail(input.email);
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        await db.updateUserRole(user.id, input.role);
+        return { success: true, message: `User role updated to ${input.role}` };
+      }),
+  }),
 });
 
 export type CMSRouter = typeof cmsRouter;
