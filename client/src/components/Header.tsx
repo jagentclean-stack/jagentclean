@@ -52,7 +52,7 @@ export default function Header() {
         <Link href="/">
           <a className="flex items-center space-x-2">
             <img 
-              src="/manus-storage/1785467843786_6a67b85c.jpg" 
+              src="/manus-storage/jagent-logo-transparent_4f3234a5.png" 
               alt="J-Agent Cleaning Logo" 
               className="h-10 w-auto lg:h-12" 
             />
@@ -93,17 +93,7 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Overlay - 完全移除，不殘留 */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 lg:hidden z-40 transition-opacity duration-300"
-          style={{
-            opacity: isOpen ? 1 : 0,
-            pointerEvents: isOpen ? "auto" : "none",
-          }}
-          onClick={handleOverlayClick}
-        />
-      )}
+      {/* 不顯示 Overlay，直接進入 Drawer */}
 
       {/* 右側 Drawer 菜單 */}
       {isOpen && (

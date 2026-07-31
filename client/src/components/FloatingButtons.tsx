@@ -21,72 +21,60 @@ export default function FloatingButtons() {
       {showMenu && (
         <div className="flex flex-col gap-3 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
           {/* LINE 按鈕 */}
-          <a
-            href="https://lin.ee/ynvoHjh"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-end gap-2 group"
-          >
+          <div className="flex items-center justify-end gap-2 group">
             <span className="bg-white text-sm font-medium px-3 py-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
               加入 LINE
             </span>
-            <Button
-              size="lg"
-              className="bg-[#00B900] hover:bg-[#00A000] rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-lg"
+            <a
+              href="https://lin.ee/ynvoHjh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#00B900] hover:bg-[#00A000] rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-lg transition-colors duration-200"
             >
-              <MessageCircle className="h-6 w-6" />
-            </Button>
-          </a>
+              <MessageCircle className="h-6 w-6 text-white" />
+            </a>
+          </div>
 
-          {/* Messenger 按鈕 */}
-          <a
-            href="https://www.facebook.com/Jagentclean"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-end gap-2 group"
-          >
+          {/* Facebook 按鈕 */}
+          <div className="flex items-center justify-end gap-2 group">
             <span className="bg-white text-sm font-medium px-3 py-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
               Facebook
             </span>
-            <Button
-              size="lg"
-              className="bg-[#0A66C2] hover:bg-[#054399] rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-lg"
+            <a
+              href="https://www.facebook.com/Jagentclean"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#0A66C2] hover:bg-[#054399] rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-lg transition-colors duration-200"
             >
-              <MessageCircle className="h-6 w-6" />
-            </Button>
-          </a>
+              <MessageCircle className="h-6 w-6 text-white" />
+            </a>
+          </div>
 
           {/* 電話按鈕 */}
-          <a
-            href="tel:06-3584567"
-            className="flex items-center justify-end gap-2 group"
-          >
+          <div className="flex items-center justify-end gap-2 group">
             <span className="bg-white text-sm font-medium px-3 py-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
               06-3584567
             </span>
-            <Button
-              size="lg"
-              className="bg-[#FF6B6B] hover:bg-[#FF5252] rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-lg"
+            <a
+              href="tel:06-3584567"
+              className="bg-[#FF6B6B] hover:bg-[#FF5252] rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-lg transition-colors duration-200"
             >
-              <Phone className="h-6 w-6" />
-            </Button>
-          </a>
+              <Phone className="h-6 w-6 text-white" />
+            </a>
+          </div>
 
           {/* 預約按鈕 */}
-          <a
-            href="/contact"
-            className="flex items-center justify-end gap-2 group"
-          >
+          <div className="flex items-center justify-end gap-2 group">
             <span className="bg-white text-sm font-medium px-3 py-2 rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
               立即預約
             </span>
-            <Button
-              size="lg"
-              className="bg-primary hover:bg-primary/90 rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-lg"
+            <a
+              href="/contact"
+              className="bg-primary hover:bg-primary/90 rounded-full h-12 w-12 p-0 flex items-center justify-center shadow-lg transition-colors duration-200"
             >
-              <Calendar className="h-6 w-6" />
-            </Button>
-          </a>
+              <Calendar className="h-6 w-6 text-white" />
+            </a>
+          </div>
         </div>
       )}
 
