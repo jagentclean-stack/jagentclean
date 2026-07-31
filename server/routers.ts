@@ -70,3 +70,5 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
+
+// Note: Admin setup should be done through database directly or via cms.users.updateRole

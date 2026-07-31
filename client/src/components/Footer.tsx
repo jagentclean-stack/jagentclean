@@ -95,7 +95,7 @@ export default function Footer() {
       </div>
 
       <div className="container mx-auto px-4 lg:px-8 border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm">
-        &copy; {new Date().getFullYear()} 潔特務清潔. All rights reserved.
+        &copy; 2020 潔特務清潔. All rights reserved.
       </div>
     </footer>
   );
