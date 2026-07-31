@@ -231,10 +231,10 @@ export default function Home() {
                 <img
                   src="/manus-storage/jagent-cleaning-service_e8cbb29e.webp"
                   alt="About J-Agent Cleaning"
-                  className="rounded-xl soft-shadow w-full max-w-md"
+                  className="rounded-xl soft-shadow w-full max-w-2xl"
                   loading="lazy"
-                  width={500}
-                  height={500}
+                  width={800}
+                  height={600}
                 />
               </div>
             </AnimatedSection>
