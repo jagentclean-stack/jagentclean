@@ -1,0 +1,100 @@
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Facebook, Instagram, Linkedin, Mail, Phone } from "lucide-react";
+
+export default function Footer() {
+  return (
+    <footer className="bg-primary text-primary-foreground py-12">
+      <div className="container mx-auto px-4 lg:px-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+        {/* Brand Info */}
+        <div className="space-y-4">
+          <Link href="/">
+            <a className="flex items-center space-x-2">
+              <img src="/manus-storage/brand-logo_0f07bc46.png" alt="J-Agent Cleaning Logo" className="h-8" />
+              <span className="text-xl font-bold">潔特務清潔</span>
+            </a>
+          </Link>
+          <p className="text-sm leading-relaxed">
+            提供專業、高品質、高信任感、高效率的企業級清潔服務，為您的空間帶來潔淨與舒適。
+          </p>
+          <div className="flex space-x-4">
+            <a href="#" aria-label="Facebook" className="hover:text-secondary hover:scale-125 transition-all duration-300">
+              <Facebook className="h-6 w-6" />
+            </a>
+            <a href="#" aria-label="Instagram" className="hover:text-secondary hover:scale-125 transition-all duration-300">
+              <Instagram className="h-6 w-6" />
+            </a>
+            <a href="#" aria-label="LinkedIn" className="hover:text-secondary hover:scale-125 transition-all duration-300">
+              <Linkedin className="h-6 w-6" />
+            </a>
+          </div>
+        </div>
+
+        {/* Quick Links */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold mb-2">快速連結</h3>
+          <ul className="space-y-2">
+            <li>
+              <Link href="/services">
+                <a className="hover:text-secondary transition-colors duration-200">服務項目</a>
+              </Link>
+            </li>
+            <li>
+              <Link href="/about">
+                <a className="hover:text-secondary transition-colors duration-200">關於我們</a>
+              </Link>
+            </li>
+            <li>
+              <Link href="/process">
+                <a className="hover:text-secondary transition-colors duration-200">清潔流程</a>
+              </Link>
+            </li>
+            <li>
+              <Link href="/testimonials">
+                <a className="hover:text-secondary transition-colors duration-200">客戶評價</a>
+              </Link>
+            </li>
+            <li>
+              <Link href="/faq">
+                <a className="hover:text-secondary transition-colors duration-200">常見問題</a>
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        {/* Contact Info */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold mb-2">聯絡我們</h3>
+          <ul className="space-y-2">
+            <li className="flex items-center space-x-2">
+              <Phone className="h-5 w-5 text-secondary" />
+              <span>+886-2-1234-5678</span>
+            </li>
+            <li className="flex items-center space-x-2">
+              <Mail className="h-5 w-5 text-secondary" />
+              <span>info@jagentcleaning.com</span>
+            </li>
+            <li className="text-sm leading-relaxed">
+              地址：台北市信義區忠孝東路五段123號
+            </li>
+          </ul>
+        </div>
+
+        {/* CTA */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold mb-2">立即預約</h3>
+          <p className="text-sm leading-relaxed">
+            讓潔特務清潔為您的空間帶來煥然一新的體驗。
+          </p>
+          <Button variant="secondary" className="soft-shadow hover:scale-110 hover:shadow-lg transition-all duration-300 w-full">
+            獲取免費報價
+          </Button>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 lg:px-8 border-t border-primary-foreground/20 mt-8 pt-8 text-center text-sm">
+        &copy; {new Date().getFullYear()} 潔特務清潔. All rights reserved.
+      </div>
+    </footer>
+  );
+}

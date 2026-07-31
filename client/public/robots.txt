@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /private
+Disallow: /*.json$
+Disallow: /*.xml$
+
+Sitemap: https://www.jagentcleaning.com/sitemap.xml
+
+# Google-specific
+User-agent: Googlebot
+Allow: /
+
+# Bing-specific
+User-agent: Bingbot
+Allow: /
+
+# Crawl-delay for all bots
+Crawl-delay: 1
