@@ -15,6 +15,11 @@ import Process from "./pages/Process";
 import Testimonials from "./pages/Testimonials";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
+import CMSDashboard from "./pages/CMSDashboard";
+import CMSServices from "./pages/CMSServices";
+import CMSBookings from "./pages/CMSBookings";
+import CMSContacts from "./pages/CMSContacts";
+import CMSMedia from "./pages/CMSMedia";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -27,6 +32,12 @@ function Router() {
       <Route path={"/testimonials"} component={Testimonials} />
       <Route path={"/faq"} component={FAQ} />
       <Route path={"/contact"} component={Contact} />
+      {/* CMS Routes */}
+      <Route path={"/cms"} component={CMSDashboard} />
+      <Route path={"/cms/services"} component={CMSServices} />
+      <Route path={"/cms/bookings"} component={CMSBookings} />
+      <Route path={"/cms/contacts"} component={CMSContacts} />
+      <Route path={"/cms/media"} component={CMSMedia} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

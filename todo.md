@@ -34,14 +34,14 @@
 - [ ] AI 圖片分類與優化
 
 ## 前端頁面開發
-- [ ] CMS Dashboard 主頁面 - 統計資訊與快速導航
+- [x] CMS Dashboard 主頁面 - 統計資訊與快速導航
 - [ ] Pages 管理頁面
-- [ ] Services 管理頁面
+- [x] Services 管理頁面
 - [ ] Cases 管理頁面
 - [ ] Blogs 管理頁面
-- [ ] Bookings 管理頁面
-- [ ] Contacts 管理頁面
-- [ ] Media 管理頁面
+- [x] Bookings 管理頁面
+- [x] Contacts 管理頁面
+- [x] Media 管理頁面
 - [ ] Settings 管理頁面
 - [ ] SEO 管理頁面
 - [ ] Menus 管理頁面
