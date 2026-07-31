@@ -37,12 +37,12 @@ export default function Home() {
 
       <div className="relative z-10 p-8 max-w-4xl mx-auto space-y-6">
         <AnimatedSection>
-          <h1 className="text-5xl md:text-6xl font-bold leading-tight tracking-tight mb-4 text-black">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight mb-4 text-black">
             潔特務清潔：專業、高效、值得信賴的企業級清潔服務
           </h1>
         </AnimatedSection>
         <AnimatedSection delay={100}>
-          <p className="text-lg md:text-xl font-light mb-8 text-black">
+          <p className="text-base md:text-lg font-light mb-8 text-black">
             我們提供世界級的清潔解決方案，為您的企業打造一塵不染的專業環境。
           </p>
         </AnimatedSection>

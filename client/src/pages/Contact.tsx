@@ -167,9 +167,18 @@ export default function Contact() {
                 </div>
               </div>
 
-              {/* Map Placeholder */}
-              <div className="glassmorphism soft-shadow p-8 rounded-xl h-80 flex items-center justify-center">
-                <p className="text-muted-foreground">地圖將在此處顯示</p>
+              {/* Google Map */}
+              <div className="glassmorphism soft-shadow p-8 rounded-xl h-80 overflow-hidden">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3684.7851234567!2d120.16!3d25.03!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x346e7c1234567%3A0x1234567890abcdef!2z5aGU57iE5qW85a6k!5e0!3m2!1szh-TW!2stw!4v1234567890"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="rounded-lg"
+                />
               </div>
             </div>
           </AnimatedSection>
