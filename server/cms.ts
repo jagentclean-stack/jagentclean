@@ -419,6 +419,72 @@ export const cmsRouter = router({
   }),
 
   /**
+   * Blogs Management
+   */
+  blogs: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!checkRole(ctx.user?.role, "admin", "editor", "marketing")) {
+        throw new Error("Unauthorized");
+      }
+      return db.getAllBlogs();
+    }),
+
+    getBySlug: protectedProcedure
+      .input(z.object({ slug: z.string() }))
+      .query(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "editor", "marketing")) {
+          throw new Error("Unauthorized");
+        }
+        return db.getBlogBySlug(input.slug);
+      }),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          title: z.string(),
+          slug: z.string(),
+          excerpt: z.string().optional(),
+          content: z.string().optional(),
+          isPublished: z.boolean().default(false),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        return db.createBlog(input as any);
+      }),
+
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          title: z.string().optional(),
+          slug: z.string().optional(),
+          excerpt: z.string().optional(),
+          content: z.string().optional(),
+          isPublished: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "editor", "marketing")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateBlog(id, data as any);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin")) {
+          throw new Error("Unauthorized");
+        }
+        return db.deleteBlog(input.id);
+      }),
+  }),
+
+  /**
    * FAQs Management
    */
   faqs: router({

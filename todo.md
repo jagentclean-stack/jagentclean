@@ -38,7 +38,7 @@
 - [ ] Pages 管理頁面
 - [x] Services 管理頁面
 - [x] Cases 管理頁面
-- [ ] Blogs 管理頁面
+- [x] Blogs 管理頁面
 - [x] Bookings 管理頁面
 - [x] Contacts 管理頁面
 - [x] Media 管理頁面
