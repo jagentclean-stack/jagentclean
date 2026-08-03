@@ -5,10 +5,13 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2, BarChart3, Package, FileText, Calendar, Mail, Image as ImageIcon, Settings } from "lucide-react";
 
+const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
+
 export default function CMSDashboard() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const isAdmin = user?.role === "admin" || (user?.email && ADMIN_EMAILS.includes(user.email));
   const { data: dashboardData, isLoading } = trpc.cms.dashboard.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: isAuthenticated && !!isAdmin,
   });
 
   if (authLoading) {
@@ -19,7 +22,7 @@ export default function CMSDashboard() {
     );
   }
 
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (!isAuthenticated || !isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">

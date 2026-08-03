@@ -5,7 +5,14 @@ import * as db from "./db";
 // Type assertion helper for role checking
 type AllowedRoles = "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
 
-const checkRole = (userRole: string | undefined, ...allowedRoles: AllowedRoles[]): boolean => {
+// 管理員 email 白名單
+const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
+
+const checkRole = (userRole: string | undefined | null, userEmail: string | undefined | null, ...allowedRoles: AllowedRoles[]): boolean => {
+  // 如果 email 在白名單中，自動授予 admin 權限
+  if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
+    return true;
+  }
   return allowedRoles.includes(userRole as AllowedRoles);
 };
 
@@ -19,7 +26,7 @@ export const cmsRouter = router({
    */
   dashboard: protectedProcedure.query(async ({ ctx }) => {
     // 只允許管理員存取
-    if (!checkRole(ctx.user?.role, "admin", "manager")) {
+    if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
       throw new Error("Unauthorized");
     }
 
