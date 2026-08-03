@@ -5,7 +5,7 @@ Disallow: /private
 Disallow: /*.json$
 Disallow: /*.xml$
 
-Sitemap: https://www.jagentcleaning.com/sitemap.xml
+Sitemap: https://jagentclean-lnbtuo7t.manus.space/sitemap.xml
 
 # Google-specific
 User-agent: Googlebot
