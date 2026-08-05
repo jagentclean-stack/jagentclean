@@ -374,3 +374,43 @@ export const seo = mysqlTable("seo", {
 
 export type SEO = typeof seo.$inferSelect;
 export type InsertSEO = typeof seo.$inferInsert;
+
+/**
+ * 首頁 Hero 區塊表
+ */
+export const hero = mysqlTable("hero", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  subtitle: varchar("subtitle", { length: 500 }),
+  backgroundImage: varchar("backgroundImage", { length: 500 }),
+  backgroundVideo: varchar("backgroundVideo", { length: 500 }),
+  ctaText: varchar("ctaText", { length: 100 }),
+  ctaLink: varchar("ctaLink", { length: 500 }),
+  isPublished: boolean("isPublished").default(false),
+  order: int("order").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Hero = typeof hero.$inferSelect;
+export type InsertHero = typeof hero.$inferInsert;
+
+/**
+ * 頁腳表
+ */
+export const footer = mysqlTable("footer", {
+  id: int("id").autoincrement().primaryKey(),
+  address: text("address"),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 255 }),
+  socialLinks: json("socialLinks"), // { facebook, instagram, line, twitter, etc }
+  copyrightText: text("copyrightText"),
+  aboutText: text("aboutText"),
+  quickLinks: json("quickLinks"), // Array of { label, url }
+  isPublished: boolean("isPublished").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Footer = typeof footer.$inferSelect;
+export type InsertFooter = typeof footer.$inferInsert;

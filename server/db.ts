@@ -1,6 +1,6 @@
 import { eq, and, desc, asc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, roles, permissions, pages, sections, menus, services, cases, blogs, categories, faqs, reviews, banners, media, contacts, bookings, settings, seo } from "../drizzle/schema";
+import { InsertUser, users, roles, permissions, pages, sections, menus, services, cases, blogs, categories, faqs, reviews, banners, media, contacts, bookings, settings, seo, hero, footer, Hero, Footer, InsertHero, InsertFooter } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -597,4 +597,65 @@ export async function deleteSEO(seoId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.delete(seo).where(eq(seo.id, seoId));
+}
+
+
+// ============ HERO FUNCTIONS ============
+
+export async function getAllHeroes() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(hero).orderBy(asc(hero.order));
+}
+
+export async function getHeroById(heroId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.select().from(hero).where(eq(hero.id, heroId)).limit(1);
+  return result[0] || null;
+}
+
+export async function createHero(data: InsertHero) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(hero).values(data);
+}
+
+export async function updateHero(heroId: number, data: Partial<InsertHero>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(hero).set(data).where(eq(hero.id, heroId));
+}
+
+export async function deleteHero(heroId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(hero).where(eq(hero.id, heroId));
+}
+
+// ============ FOOTER FUNCTIONS ============
+
+export async function getFooter() {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(footer).limit(1);
+  return result[0] || null;
+}
+
+export async function createFooter(data: InsertFooter) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(footer).values(data);
+}
+
+export async function updateFooter(footerId: number, data: Partial<InsertFooter>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(footer).set(data).where(eq(footer.id, footerId));
+}
+
+export async function deleteFooter(footerId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(footer).where(eq(footer.id, footerId));
 }

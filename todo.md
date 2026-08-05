@@ -8,9 +8,9 @@
 - [x] 建立 Dashboard 主頁面元件
 
 ## 第二階段：頁面管理功能
-- [ ] 首頁管理（Hero、標題、副標題、背景圖片/影片）
+- [x] 首頁管理（Hero、標題、副標題、背景圖片/影片）
 - [x] 導覽列管理（新增、修改、刪除、排序、下拉選單）
-- [ ] Footer 管理（地址、電話、Email、社群媒體連結）
+- [x] Footer 管理（地址、電話、Email、社群媒體連結）
 - [x] 頁面 SEO 管理（Title、Description、Keywords、Canonical、OG 圖片）
 
 ## 第三階段：內容管理功能

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Loader2, BarChart3, Package, FileText, Calendar, Mail, Image as ImageIcon, Settings } from "lucide-react";
+import { Loader2, BarChart3, Package, FileText, Calendar, Mail, Image as ImageIcon, Settings, Zap } from "lucide-react";
 
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
@@ -216,6 +216,16 @@ export default function CMSDashboard() {
             <Link href="/cms/faqs">
               <Button variant="ghost" className="w-full">
                 FAQ 管理
+              </Button>
+            </Link>
+            <Link href="/cms/hero">
+              <Button variant="ghost" className="w-full">
+                Hero 管理
+              </Button>
+            </Link>
+            <Link href="/cms/footer">
+              <Button variant="ghost" className="w-full">
+                Footer 管理
               </Button>
             </Link>
           </div>

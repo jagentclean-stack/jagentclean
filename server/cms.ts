@@ -673,6 +673,124 @@ export const cmsRouter = router({
         return { success: true, message: `User role updated to ${input.role}` };
       }),
   }),
+  /**
+   * Hero Management
+   */
+  hero: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+        throw new Error("Unauthorized");
+      }
+      return db.getAllHeroes();
+    }),
+    create: protectedProcedure
+      .input(
+        z.object({
+          title: z.string().min(1, "Title is required"),
+          subtitle: z.string().optional(),
+          backgroundImage: z.string().optional(),
+          backgroundVideo: z.string().optional(),
+          ctaText: z.string().optional(),
+          ctaLink: z.string().optional(),
+          isPublished: z.boolean().default(false),
+          order: z.number().default(0),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        return db.createHero(input);
+      }),
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          title: z.string().optional(),
+          subtitle: z.string().optional(),
+          backgroundImage: z.string().optional(),
+          backgroundVideo: z.string().optional(),
+          ctaText: z.string().optional(),
+          ctaLink: z.string().optional(),
+          isPublished: z.boolean().optional(),
+          order: z.number().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateHero(id, data);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+          throw new Error("Unauthorized");
+        }
+        return db.deleteHero(input.id);
+      }),
+  }),
+  /**
+   * Footer Management
+   */
+  footer: router({
+    get: protectedProcedure.query(async ({ ctx }) => {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+        throw new Error("Unauthorized");
+      }
+      return db.getFooter();
+    }),
+    create: protectedProcedure
+      .input(
+        z.object({
+          address: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().optional(),
+          socialLinks: z.any().optional(),
+          copyrightText: z.string().optional(),
+          aboutText: z.string().optional(),
+          quickLinks: z.any().optional(),
+          isPublished: z.boolean().default(false),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        return db.createFooter(input);
+      }),
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          address: z.string().optional(),
+          phone: z.string().optional(),
+          email: z.string().optional(),
+          socialLinks: z.any().optional(),
+          copyrightText: z.string().optional(),
+          aboutText: z.string().optional(),
+          quickLinks: z.any().optional(),
+          isPublished: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateFooter(id, data);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+          throw new Error("Unauthorized");
+        }
+        return db.deleteFooter(input.id);
+      }),
+  }),
 });
 
 export type CMSRouter = typeof cmsRouter;

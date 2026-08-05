@@ -28,6 +28,8 @@ import CMSPages from "./pages/CMSPages";
 import CMSMenus from "./pages/CMSMenus";
 import CMSSEO from "./pages/CMSSEO";
 import AdminDebug from "./pages/AdminDebug";
+import CMSHero from "./pages/CMSHero";
+import CMSFooter from "./pages/CMSFooter";
 import AdminSetup from "./pages/AdminSetup";
 
 function Router() {
@@ -55,6 +57,8 @@ function Router() {
       <Route path={"/cms/menus"} component={CMSMenus} />
       <Route path={"/cms/seo"} component={CMSSEO} />
       <Route path={"/admin/debug"} component={AdminDebug} />
+      <Route path={"/cms/hero"} component={CMSHero} />
+      <Route path={"/cms/footer"} component={CMSFooter} />
       <Route path={"/admin-setup"} component={AdminSetup} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
