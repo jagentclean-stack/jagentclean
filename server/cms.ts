@@ -549,6 +549,65 @@ export const cmsRouter = router({
   }),
 
   /**
+   * Menus Management
+   */
+  menus: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+        throw new Error("Unauthorized");
+      }
+      return db.getAllMenus();
+    }),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          label: z.string().min(1, "菜單標籤必填"),
+          url: z.string().min(1, "URL 必填"),
+          order: z.number().optional(),
+          isVisible: z.boolean().default(true),
+          openInNewTab: z.boolean().default(false),
+          parentId: z.number().optional().nullable(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+          throw new Error("Unauthorized");
+        }
+        return db.createMenu(input);
+      }),
+
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          label: z.string().optional(),
+          url: z.string().optional(),
+          order: z.number().optional(),
+          isVisible: z.boolean().optional(),
+          openInNewTab: z.boolean().optional(),
+          parentId: z.number().optional().nullable(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateMenu(id, data);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+          throw new Error("Unauthorized");
+        }
+        return db.deleteMenu(input.id);
+      }),
+  }),
+
+  /**
    * SEO Management
    */
   seo: router({

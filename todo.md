@@ -9,9 +9,9 @@
 
 ## 第二階段：頁面管理功能
 - [ ] 首頁管理（Hero、標題、副標題、背景圖片/影片）
-- [ ] 導覽列管理（新增、修改、刪除、排序、下拉選單）
+- [x] 導覽列管理（新增、修改、刪除、排序、下拉選單）
 - [ ] Footer 管理（地址、電話、Email、社群媒體連結）
-- [ ] 頁面 SEO 管理（Title、Description、Keywords、Canonical、OG 圖片）
+- [x] 頁面 SEO 管理（Title、Description、Keywords、Canonical、OG 圖片）
 
 ## 第三階段：內容管理功能
 - [ ] 服務管理（名稱、介紹、流程、價格、圖片、SEO）
@@ -43,8 +43,8 @@
 - [x] Contacts 管理頁面
 - [x] Media 管理頁面
 - [x] Settings 管理頁面
-- [ ] SEO 管理頁面
-- [ ] Menus 管理頁面
+- [x] SEO 管理頁面
+- [x] Menus 管理頁面
 - [x] FAQs 管理頁面
 
 ## 前台動態化

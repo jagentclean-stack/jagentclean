@@ -25,6 +25,9 @@ import CMSFAQs from "./pages/CMSFAQs";
 import CMSBlogs from "./pages/CMSBlogs";
 import CMSSettings from "./pages/CMSSettings";
 import CMSPages from "./pages/CMSPages";
+import CMSMenus from "./pages/CMSMenus";
+import CMSSEO from "./pages/CMSSEO";
+import AdminDebug from "./pages/AdminDebug";
 import AdminSetup from "./pages/AdminSetup";
 
 function Router() {
@@ -49,6 +52,9 @@ function Router() {
       <Route path={"/cms/blogs"} component={CMSBlogs} />
       <Route path={"/cms/settings"} component={CMSSettings} />
       <Route path={"/cms/pages"} component={CMSPages} />
+      <Route path={"/cms/menus"} component={CMSMenus} />
+      <Route path={"/cms/seo"} component={CMSSEO} />
+      <Route path={"/admin/debug"} component={AdminDebug} />
       <Route path={"/admin-setup"} component={AdminSetup} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
