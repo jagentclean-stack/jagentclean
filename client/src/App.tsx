@@ -31,39 +31,43 @@ import AdminDebug from "./pages/AdminDebug";
 import CMSHero from "./pages/CMSHero";
 import CMSFooter from "./pages/CMSFooter";
 import AdminSetup from "./pages/AdminSetup";
+import FloatingContactMenu from "@/components/FloatingContactMenu";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/services"} component={Services} />
-      <Route path={"/about"} component={About} />
-      <Route path={"/process"} component={Process} />
-      <Route path={"/testimonials"} component={Testimonials} />
-      <Route path={"/faq"} component={FAQ} />
-      <Route path={"/contact"} component={Contact} />
-      {/* CMS Routes */}
-      <Route path={"/cms"} component={CMSDashboard} />
-      <Route path={"/cms/services"} component={CMSServices} />
-      <Route path={"/cms/bookings"} component={CMSBookings} />
-      <Route path={"/cms/contacts"} component={CMSContacts} />
-      <Route path={"/cms/media"} component={CMSMedia} />
-      <Route path={"/cms/cases"} component={CMSCases} />
-      <Route path={"/cms/faqs"} component={CMSFAQs} />
-      <Route path={"/cms/blogs"} component={CMSBlogs} />
-      <Route path={"/cms/settings"} component={CMSSettings} />
-      <Route path={"/cms/pages"} component={CMSPages} />
-      <Route path={"/cms/menus"} component={CMSMenus} />
-      <Route path={"/cms/seo"} component={CMSSEO} />
-      <Route path={"/admin/debug"} component={AdminDebug} />
-      <Route path={"/cms/hero"} component={CMSHero} />
-      <Route path={"/cms/footer"} component={CMSFooter} />
-      <Route path={"/admin-setup"} component={AdminSetup} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/services"} component={Services} />
+        <Route path={"/about"} component={About} />
+        <Route path={"/process"} component={Process} />
+        <Route path={"/testimonials"} component={Testimonials} />
+        <Route path={"/faq"} component={FAQ} />
+        <Route path={"/contact"} component={Contact} />
+        {/* CMS Routes */}
+        <Route path={"/cms"} component={CMSDashboard} />
+        <Route path={"/cms/services"} component={CMSServices} />
+        <Route path={"/cms/bookings"} component={CMSBookings} />
+        <Route path={"/cms/contacts"} component={CMSContacts} />
+        <Route path={"/cms/media"} component={CMSMedia} />
+        <Route path={"/cms/cases"} component={CMSCases} />
+        <Route path={"/cms/faqs"} component={CMSFAQs} />
+        <Route path={"/cms/blogs"} component={CMSBlogs} />
+        <Route path={"/cms/settings"} component={CMSSettings} />
+        <Route path={"/cms/pages"} component={CMSPages} />
+        <Route path={"/cms/menus"} component={CMSMenus} />
+        <Route path={"/cms/seo"} component={CMSSEO} />
+        <Route path={"/admin/debug"} component={AdminDebug} />
+        <Route path={"/cms/hero"} component={CMSHero} />
+        <Route path={"/cms/footer"} component={CMSFooter} />
+        <Route path={"/admin-setup"} component={AdminSetup} />
+        <Route path={"/404"} component={NotFound} />
+        {/* Final fallback route */}
+        <Route component={NotFound} />
+      </Switch>
+      <FloatingContactMenu />
+    </>
   );
 }
 
