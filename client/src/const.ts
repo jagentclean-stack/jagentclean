@@ -17,9 +17,20 @@ export const startLogin = () => {
   const appId = import.meta.env.VITE_APP_ID;
   const redirectUri = `${window.location.origin}/api/oauth/callback`;
 
+  console.log("[startLogin] Starting OAuth flow", {
+    oauthPortalUrl,
+    appId,
+    redirectUri,
+  });
+
   const nonce = crypto.randomUUID();
   document.cookie = `${OAUTH_STATE_COOKIE}=${nonce}; Path=/; Max-Age=600; SameSite=None; Secure`;
   const state = encodeOAuthState({ redirectUri, nonce });
+
+  console.log("[startLogin] State encoded", {
+    nonce,
+    stateLength: state.length,
+  });
 
   const url = new URL(`${oauthPortalUrl}/app-auth`);
   url.searchParams.set("appId", appId);
@@ -27,5 +38,6 @@ export const startLogin = () => {
   url.searchParams.set("state", state);
   url.searchParams.set("type", "signIn");
 
+  console.log("[startLogin] Redirecting to", url.toString().substring(0, 100));
   window.location.href = url.toString();
 };

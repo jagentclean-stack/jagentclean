@@ -49,68 +49,54 @@ export default function Header() {
         style={{ maxWidth: '1400px' }}
       >
         {/* Logo 和品牌名稱 - 左側 */}
-        <Link href="/">
-          <a className="flex items-center gap-3 flex-shrink-0">
-            <img 
-              src="/manus-storage/1785467843786_6a67b85c.jpg" 
-              alt="J-Agent Cleaning Logo" 
-              className="h-12 w-auto"
-            />
-            <div className="hidden sm:flex flex-col">
-              <span className="text-sm font-semibold text-primary">J-Agent Cleaning</span>
-              <span className="text-xs text-gray-600">潔特務清潔</span>
-            </div>
-          </a>
+        <Link href="/" className="flex items-center gap-3 flex-shrink-0">
+          <img 
+            src="/manus-storage/1785467843786_6a67b85c.jpg" 
+            alt="J-Agent Cleaning Logo" 
+            className="h-12 w-auto"
+          />
+          <div className="hidden sm:flex flex-col">
+            <span className="text-sm font-semibold text-primary">J-Agent Cleaning</span>
+            <span className="text-xs text-gray-600">潔特務清潔</span>
+          </div>
         </Link>
 
         {/* 導覽菜單 - 中央 */}
         <nav className="hidden lg:flex items-center gap-12 flex-1 justify-center">
-          <Link href="/services">
-            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
-              服務項目
-            </a>
+          <Link href="/services" className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+            服務項目
           </Link>
-          <Link href="/about">
-            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
-              關於我們
-            </a>
+          <Link href="/about" className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+            關於我們
           </Link>
-          <Link href="/process">
-            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
-              清潔流程
-            </a>
+          <Link href="/process" className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+            清潔流程
           </Link>
-          <Link href="/testimonials">
-            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
-              客戶評價
-            </a>
+          <Link href="/testimonials" className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+            客戶評價
           </Link>
-          <Link href="/faq">
-            <a className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
-              常見問題
-            </a>
+          <Link href="/faq" className="text-gray-700 hover:text-primary transition-colors duration-200 font-medium">
+            常見問題
           </Link>
         </nav>
 
         {/* 右側：預約按鈕 + 登入/登出 + Dark Mode - 右側 */}
         <div className="hidden lg:flex items-center gap-4">
           <Link href="/contact">
-            <a>
-              <Button 
-                className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-full"
-                style={{
-                  height: '44px',
-                  paddingLeft: '24px',
-                  paddingRight: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <Calendar className="h-4 w-4" />
-                立即預約
-              </Button>
-            </a>
+            <Button 
+              className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-full"
+              style={{
+                height: '44px',
+                paddingLeft: '24px',
+                paddingRight: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <Calendar className="h-4 w-4" />
+              立即預約
+            </Button>
           </Link>
           
           {/* 登入/登出按鈕 */}
@@ -167,62 +153,35 @@ export default function Header() {
           }}
         >
           <nav className="flex flex-col items-start space-y-4 p-6">
-            <Link href="/services">
-              <a 
-                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
-                onClick={handleCloseMenu}
-              >
-                服務項目
-              </a>
+            <Link href="/services" className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" onClick={handleCloseMenu}>
+              服務項目
             </Link>
-            <Link href="/about">
-              <a 
-                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
-                onClick={handleCloseMenu}
-              >
-                關於我們
-              </a>
+            <Link href="/about" className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" onClick={handleCloseMenu}>
+              關於我們
             </Link>
-            <Link href="/process">
-              <a 
-                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
-                onClick={handleCloseMenu}
-              >
-                清潔流程
-              </a>
+            <Link href="/process" className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" onClick={handleCloseMenu}>
+              清潔流程
             </Link>
-            <Link href="/testimonials">
-              <a 
-                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
-                onClick={handleCloseMenu}
-              >
-                客戶評價
-              </a>
+            <Link href="/testimonials" className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" onClick={handleCloseMenu}>
+              客戶評價
             </Link>
-            <Link href="/faq">
-              <a 
-                className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" 
-                onClick={handleCloseMenu}
-              >
-                常見問題
-              </a>
+            <Link href="/faq" className="text-gray-700 hover:text-primary transition-colors duration-200 w-full font-medium" onClick={handleCloseMenu}>
+              常見問題
             </Link>
-            <Link href="/contact">
-              <a onClick={handleCloseMenu}>
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold rounded-full mt-4"
-                  style={{
-                    height: '44px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <Calendar className="h-4 w-4" />
-                  立即預約
-                </Button>
-              </a>
+            <Link href="/contact" onClick={handleCloseMenu}>
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 text-white font-semibold rounded-full mt-4"
+                style={{
+                  height: '44px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Calendar className="h-4 w-4" />
+                立即預約
+              </Button>
             </Link>
             
             {/* 手機版登入/登出按鈕 */}

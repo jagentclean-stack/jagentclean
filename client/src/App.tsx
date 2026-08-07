@@ -32,6 +32,7 @@ import CMSHero from "./pages/CMSHero";
 import CMSFooter from "./pages/CMSFooter";
 import CMSReviews from "./pages/CMSReviews";
 import AdminSetup from "./pages/AdminSetup";
+import TestLogin from "./pages/TestLogin";
 import FloatingContactMenu from "@/components/FloatingContactMenu";
 
 function Router() {
@@ -45,6 +46,8 @@ function Router() {
         <Route path={"/testimonials"} component={Testimonials} />
         <Route path={"/faq"} component={FAQ} />
         <Route path={"/contact"} component={Contact} />
+        {/* Test Login */}
+        <Route path={"/test-login"} component={TestLogin} />
         {/* CMS Routes */}
         <Route path={"/cms"} component={CMSDashboard} />
         <Route path={"/cms/services"} component={CMSServices} />

@@ -39,7 +39,13 @@ class OAuthService {
   }
 
   private decodeState(state: string): string {
-    return decodeOAuthState(state).redirectUri;
+    const decoded = decodeOAuthState(state);
+    console.log("[OAuth SDK] Decoded state:", {
+      stateLength: state.length,
+      redirectUri: decoded.redirectUri,
+      hasNonce: !!decoded.nonce,
+    });
+    return decoded.redirectUri;
   }
 
   async getTokenByCode(

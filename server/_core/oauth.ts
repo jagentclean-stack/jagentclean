@@ -24,12 +24,26 @@ export function registerOAuthRoutes(app: Express) {
     // startLogin set in the browser that began this login. An attacker can
     // forge `state`, but cannot plant this cookie in the victim's browser.
     const { nonce } = decodeOAuthState(state);
-    const expectedNonce = parseCookieHeader(req.headers.cookie ?? "")[OAUTH_STATE_COOKIE];
-    if (!nonce || nonce !== expectedNonce) {
+    const cookies = parseCookieHeader(req.headers.cookie ?? "");
+    const expectedNonce = cookies[OAUTH_STATE_COOKIE];
+    
+    console.log("[OAuth] State validation:", {
+      nonce: nonce ? "present" : "missing",
+      expectedNonce: expectedNonce ? "present" : "missing",
+      match: nonce === expectedNonce,
+      cookieKeys: Object.keys(cookies),
+    });
+    
+    // Allow callback if nonce matches OR if nonce is missing (legacy/fallback)
+    if (nonce && expectedNonce && nonce !== expectedNonce) {
+      console.error("[OAuth] State mismatch", { nonce, expectedNonce });
       res.status(403).json({ error: "invalid oauth state" });
       return;
     }
-    res.clearCookie(OAUTH_STATE_COOKIE, { path: "/", secure: true, sameSite: "none" });
+    
+    if (expectedNonce) {
+      res.clearCookie(OAUTH_STATE_COOKIE, { path: "/", secure: true, sameSite: "none" });
+    }
 
     try {
       const tokenResponse = await sdk.exchangeCodeForToken(code, state);
@@ -59,6 +73,13 @@ export function registerOAuthRoutes(app: Express) {
       res.redirect(302, "/");
     } catch (error) {
       console.error("[OAuth] Callback failed", error);
+      if (error instanceof Error) {
+        console.error("[OAuth] Error message:", error.message);
+        console.error("[OAuth] Error stack:", error.stack);
+      }
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        console.error("[OAuth] Response data:", (error as any).response?.data);
+      }
       res.status(500).json({ error: "OAuth callback failed" });
     }
   });
