@@ -17,11 +17,11 @@ export default function CMSReviews() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    photo: "",
+    avatar: "",
     rating: 5,
-    comment: "",
+    content: "",
     isPublished: false,
-    showOnHomepage: false,
+    isHomepageDisplay: false,
   });
 
   const { data: reviews, isLoading, refetch } = trpc.cms.reviews.list.useQuery();
@@ -46,11 +46,11 @@ export default function CMSReviews() {
 
       setFormData({
         name: "",
-        photo: "",
+        avatar: "",
         rating: 5,
-        comment: "",
+        content: "",
         isPublished: false,
-        showOnHomepage: false,
+        isHomepageDisplay: false,
       });
       setEditingId(null);
       setIsOpen(false);
@@ -61,14 +61,14 @@ export default function CMSReviews() {
   };
 
   const handleEdit = (review: any) => {
-    setFormData({
-      name: review.name,
-      photo: review.photo || "",
-      rating: review.rating,
-      comment: review.comment,
-      isPublished: review.isPublished,
-      showOnHomepage: review.showOnHomepage,
-    });
+      setFormData({
+        name: review.name,
+        avatar: review.avatar || "",
+        rating: review.rating,
+        content: review.content,
+        isPublished: review.isPublished,
+        isHomepageDisplay: review.isHomepageDisplay,
+      });
     setEditingId(review.id);
     setIsOpen(true);
   };
@@ -90,11 +90,11 @@ export default function CMSReviews() {
     setEditingId(null);
     setFormData({
       name: "",
-      photo: "",
+      avatar: "",
       rating: 5,
-      comment: "",
+      content: "",
       isPublished: false,
-      showOnHomepage: false,
+      isHomepageDisplay: false,
     });
   };
 
@@ -131,11 +131,11 @@ export default function CMSReviews() {
               <div>
                 <label className="text-sm font-medium">照片 URL</label>
                 <Input
-                  value={formData.photo}
+                  value={formData.avatar}
                   onChange={(e) =>
-                    setFormData({ ...formData, photo: e.target.value })
+                    setFormData({ ...formData, avatar: e.target.value })
                   }
-                  placeholder="https://example.com/photo.jpg"
+                  placeholder="https://example.com/avatar.jpg"
                 />
               </div>
 
@@ -164,9 +164,9 @@ export default function CMSReviews() {
               <div>
                 <label className="text-sm font-medium">評論 *</label>
                 <Textarea
-                  value={formData.comment}
+                  value={formData.content}
                   onChange={(e) =>
-                    setFormData({ ...formData, comment: e.target.value })
+                    setFormData({ ...formData, content: e.target.value })
                   }
                   placeholder="客戶評論"
                   required
@@ -190,11 +190,11 @@ export default function CMSReviews() {
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={formData.showOnHomepage}
+                    checked={formData.isHomepageDisplay}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        showOnHomepage: e.target.checked,
+                        isHomepageDisplay: e.target.checked,
                       })
                     }
                   />
@@ -251,7 +251,7 @@ export default function CMSReviews() {
                         已發布
                       </span>
                     )}
-                    {review.showOnHomepage && (
+                    {review.isHomepageDisplay && (
                       <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
                         首頁顯示
                       </span>

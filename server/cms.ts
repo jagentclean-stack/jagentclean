@@ -807,11 +807,11 @@ export const cmsRouter = router({
       .input(
         z.object({
           name: z.string().min(1, "姓名必填"),
-          photo: z.string().optional(),
+          avatar: z.string().optional(),
           rating: z.number().min(1).max(5),
-          comment: z.string().min(1, "評論必填"),
+          content: z.string().min(1, "評論必填"),
           isPublished: z.boolean().default(false),
-          showOnHomepage: z.boolean().default(false),
+          isHomepageDisplay: z.boolean().default(false),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -826,11 +826,11 @@ export const cmsRouter = router({
         z.object({
           id: z.number(),
           name: z.string().optional(),
-          photo: z.string().optional(),
+          avatar: z.string().optional(),
           rating: z.number().min(1).max(5).optional(),
-          comment: z.string().optional(),
+          content: z.string().optional(),
           isPublished: z.boolean().optional(),
-          showOnHomepage: z.boolean().optional(),
+          isHomepageDisplay: z.boolean().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
