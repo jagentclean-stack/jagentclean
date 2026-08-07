@@ -30,14 +30,14 @@ import CMSSEO from "./pages/CMSSEO";
 import AdminDebug from "./pages/AdminDebug";
 import CMSHero from "./pages/CMSHero";
 import CMSFooter from "./pages/CMSFooter";
+import CMSReviews from "./pages/CMSReviews";
 import AdminSetup from "./pages/AdminSetup";
 import FloatingContactMenu from "@/components/FloatingContactMenu";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <>
-      <Switch>
+    <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/services"} component={Services} />
         <Route path={"/about"} component={About} />
@@ -61,13 +61,12 @@ function Router() {
         <Route path={"/admin/debug"} component={AdminDebug} />
         <Route path={"/cms/hero"} component={CMSHero} />
         <Route path={"/cms/footer"} component={CMSFooter} />
+        <Route path={"/cms/reviews"} component={CMSReviews} />
         <Route path={"/admin-setup"} component={AdminSetup} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
       </Switch>
-      <FloatingContactMenu />
-    </>
   );
 }
 
@@ -87,6 +86,7 @@ function App() {
           <Toaster />
           <FloatingButtons />
           <AIChatAdvisor />
+          <FloatingContactMenu />
           <div className="min-h-screen flex flex-col">
             <Header />
             <main className="flex-grow">

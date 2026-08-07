@@ -790,7 +790,65 @@ export const cmsRouter = router({
         }
         return db.deleteFooter(input.id);
       }),
+    }),
+
+  /**
+   * Reviews Management
+   */
+  reviews: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "marketing")) {
+        throw new Error("Unauthorized");
+      }
+      return db.getAllReviews();
+    }),
+
+    create: protectedProcedure
+      .input(
+        z.object({
+          name: z.string().min(1, "姓名必填"),
+          photo: z.string().optional(),
+          rating: z.number().min(1).max(5),
+          comment: z.string().min(1, "評論必填"),
+          isPublished: z.boolean().default(false),
+          showOnHomepage: z.boolean().default(false),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "marketing")) {
+          throw new Error("Unauthorized");
+        }
+        return db.createReview(input as any);
+      }),
+
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          photo: z.string().optional(),
+          rating: z.number().min(1).max(5).optional(),
+          comment: z.string().optional(),
+          isPublished: z.boolean().optional(),
+          showOnHomepage: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "marketing")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateReview(id, data as any);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+          throw new Error("Unauthorized");
+        }
+        return db.deleteReview(input.id);
+      }),
   }),
 });
-
 export type CMSRouter = typeof cmsRouter;

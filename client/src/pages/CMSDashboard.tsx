@@ -228,6 +228,11 @@ export default function CMSDashboard() {
                 Footer 管理
               </Button>
             </Link>
+            <Link href="/cms/reviews">
+              <Button variant="ghost" className="w-full">
+                評價管理
+              </Button>
+            </Link>
           </div>
         </Card>
       </div>
