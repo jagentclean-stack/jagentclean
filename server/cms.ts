@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 
@@ -850,5 +850,40 @@ export const cmsRouter = router({
         return db.deleteReview(input.id);
       }),
   }),
+
+  /**
+   * Contact Form
+   */
+  contact: {
+    sendEmail: publicProcedure
+      .input(z.object({
+        name: z.string().min(1, "姓名為必填"),
+        email: z.string().email("請輸入有效的電子郵件"),
+        subject: z.string().min(1, "主旨為必填"),
+        message: z.string().min(1, "訊息為必填"),
+      }))
+      .mutation(async ({ input }: { input: { name: string; email: string; subject: string; message: string } }) => {
+        try {
+          // 保存聯繫訊息到資料庫
+          await db.createContact({
+            name: input.name,
+            email: input.email,
+            message: input.message,
+            createdAt: new Date(),
+          });
+          
+          // TODO: 事後可以添加發送郵件的邏輯
+          // 例如使用 SMTP、SendGrid 等服務
+          // 或使用 Manus 的位會通知 API
+          console.log("[Contact] New message from:", input.email);
+          console.log("[Contact] Subject:", input.subject);
+
+          return { success: true, message: "訊息已成功保存" };
+        } catch (error) {
+          console.error("[Contact] Error:", error);
+          throw new Error("無法保存訊息，請稍後重試");
+        }
+      }),
+  },
 });
 export type CMSRouter = typeof cmsRouter;
