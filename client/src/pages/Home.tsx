@@ -129,6 +129,23 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 品牌代言人區 */}
+      <section className="relative z-10 w-full bg-background" style={{ paddingTop: '60px', paddingBottom: '80px' }}>
+        <div className="w-full px-6 lg:px-8" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+          <AnimatedSection>
+            <div className="flex justify-center">
+              <img
+                src="/manus-storage/586524_e7f6adef.png"
+                alt="潔特務清潔品牌代言人"
+                className="rounded-xl soft-shadow"
+                style={{ maxWidth: '300px', height: 'auto' }}
+                loading="lazy"
+              />
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
       {/* 品牌數據區 - 三欄橫向排列 */}
       <section 
         className="relative z-10 w-full bg-background"

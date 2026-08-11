@@ -35,12 +35,12 @@ export default function About() {
           <AnimatedSection delay={100}>
             <div className="md:w-1/2 flex justify-center">
               <img
-                src="/manus-storage/service-efficiency_69b1ecc1.png"
-                alt="Our Mission and Vision"
+                src="/manus-storage/586524_e7f6adef.png"
+                alt="潔特務清潔專業團隊代言人"
                 className="rounded-xl soft-shadow w-full max-w-md"
                 loading="lazy"
-                width={500}
-                height={500}
+                width={400}
+                height={400}
               />
             </div>
           </AnimatedSection>

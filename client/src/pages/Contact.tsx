@@ -19,7 +19,20 @@ export default function Contact() {
           </p>
         </AnimatedSection>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-20">
+          {/* Brand Representative */}
+          <AnimatedSection delay={100}>
+            <div className="flex justify-center">
+              <img
+                src="/manus-storage/586524_e7f6adef.png"
+                alt="潔特務清潔客戶服務代表"
+                className="rounded-xl soft-shadow"
+                style={{ maxWidth: '280px', height: 'auto' }}
+                loading="lazy"
+              />
+            </div>
+          </AnimatedSection>
+
           {/* LINE Consultation */}
           <AnimatedSection delay={200}>
             <div className="glassmorphism soft-shadow p-8 rounded-xl h-full flex flex-col justify-center">
