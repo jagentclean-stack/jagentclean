@@ -1,53 +1,9 @@
-import { useState } from "react";
-import { Link } from "wouter";
 import AnimatedSection from "@/components/AnimatedSection";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Mail, Phone, MapPin } from "lucide-react";
-import { toast } from "sonner";
-import { trpc } from "@/lib/trpc";
+import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
 
 export default function Contact() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
-  };
-
-  const sendEmailMutation = trpc.contact.sendEmail.useMutation();
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      await sendEmailMutation.mutateAsync({
-        name: formData.name,
-        email: formData.email,
-        subject: formData.subject,
-        message: formData.message,
-      });
-
-      toast.success("訊息已成功發送！我們將盡快回覆您。");
-      setFormData({ name: "", email: "", subject: "", message: "" });
-    } catch (error) {
-      console.error("Error sending email:", error);
-      toast.error("發送失敗，請稍後重試。");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const lineUrl = "https://lin.ee/ynvoHjh";
 
   return (
     <div className="min-h-screen pt-20 bg-background">
@@ -64,69 +20,25 @@ export default function Contact() {
         </AnimatedSection>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
-          {/* Contact Form */}
+          {/* LINE Consultation */}
           <AnimatedSection delay={200}>
-            <div className="glassmorphism soft-shadow p-8 rounded-xl">
-              <h2 className="text-3xl font-bold text-primary mb-6">發送訊息</h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block text-lg font-medium text-foreground mb-2">姓名</label>
-                  <Input
-                    type="text"
-                    id="name"
-                    placeholder="您的姓名"
-                    className="glassmorphism"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-lg font-medium text-foreground mb-2">電子郵件</label>
-                  <Input
-                    type="email"
-                    id="email"
-                    placeholder="您的電子郵件"
-                    className="glassmorphism"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="subject" className="block text-lg font-medium text-foreground mb-2">主旨</label>
-                  <Input
-                    type="text"
-                    id="subject"
-                    placeholder="訊息主旨"
-                    className="glassmorphism"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="message" className="block text-lg font-medium text-foreground mb-2">訊息</label>
-                  <Textarea
-                    id="message"
-                    placeholder="請輸入您的訊息"
-                    rows={5}
-                    className="glassmorphism"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+            <div className="glassmorphism soft-shadow p-8 rounded-xl h-full flex flex-col justify-center">
+              <h2 className="text-3xl font-bold text-primary mb-6">加 LINE 諮詢</h2>
+              <p className="text-lg text-muted-foreground mb-8">
+                掃描下方二維碼或點擊按鈕，直接加入我們的 LINE 官方帳號，獲得即時的專業諮詢服務。
+              </p>
+              <a href={lineUrl} target="_blank" rel="noopener noreferrer">
                 <Button
-                  type="submit"
-                  variant="default"
                   size="lg"
-                  className="w-full soft-shadow hover:scale-105 transition-transform duration-300"
-                  disabled={isSubmitting}
+                  className="w-full soft-shadow hover:scale-105 transition-transform duration-300 bg-[#00B900] hover:bg-[#00A000] text-white"
                 >
-                  {isSubmitting ? "發送中..." : "發送訊息"}
+                  <MessageCircle className="mr-2 h-5 w-5" />
+                  加入 LINE 官方帳號
                 </Button>
-              </form>
+              </a>
+              <p className="text-sm text-muted-foreground mt-6 text-center">
+                官方帳號：@jagentclean
+              </p>
             </div>
           </AnimatedSection>
 
