@@ -37,7 +37,7 @@ export default function Contact() {
                 </Button>
               </a>
               <p className="text-sm text-muted-foreground mt-6 text-center">
-                官方帳號：@jagentclean
+                官方帳號：@093oooek
               </p>
             </div>
           </AnimatedSection>
