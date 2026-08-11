@@ -117,7 +117,7 @@ export default function Header() {
             <Button 
               variant="outline"
               size="sm"
-              onClick={() => startLogin()}
+              onClick={() => window.location.href = '/test-login'}
               className="rounded-full"
             >
               登入
@@ -205,7 +205,7 @@ export default function Header() {
                 <Button 
                   className="w-full bg-primary hover:bg-primary/90 text-white font-semibold rounded-full"
                   onClick={() => {
-                    startLogin();
+                    window.location.href = '/test-login';
                     handleCloseMenu();
                   }}
                 >

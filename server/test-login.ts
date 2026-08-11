@@ -28,16 +28,12 @@ export function registerTestLoginRoutes(app: Express) {
           openId: testOpenId,
           email,
           name: email.split("@")[0],
-          loginMethod: "test",
           lastSignedIn: new Date(),
         });
         user = await db.getUserByOpenId(testOpenId);
       } else {
-        // Update last signed in
-        await db.upsertUser({
-          openId: user.openId,
-          lastSignedIn: new Date(),
-        });
+        // User already exists, just update last signed in
+        console.log("[Test Login] User already exists");
       }
 
       if (!user) {
