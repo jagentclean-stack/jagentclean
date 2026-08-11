@@ -15,24 +15,7 @@ import Process from "./pages/Process";
 import Testimonials from "./pages/Testimonials";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
-import CMSDashboard from "./pages/CMSDashboard";
-import CMSServices from "./pages/CMSServices";
-import CMSBookings from "./pages/CMSBookings";
-import CMSContacts from "./pages/CMSContacts";
-import CMSMedia from "./pages/CMSMedia";
-import CMSCases from "./pages/CMSCases";
-import CMSFAQs from "./pages/CMSFAQs";
-import CMSBlogs from "./pages/CMSBlogs";
-import CMSSettings from "./pages/CMSSettings";
-import CMSPages from "./pages/CMSPages";
-import CMSMenus from "./pages/CMSMenus";
-import CMSSEO from "./pages/CMSSEO";
-import AdminDebug from "./pages/AdminDebug";
-import CMSHero from "./pages/CMSHero";
-import CMSFooter from "./pages/CMSFooter";
-import CMSReviews from "./pages/CMSReviews";
-import AdminSetup from "./pages/AdminSetup";
-import TestLogin from "./pages/TestLogin";
+
 import FloatingContactMenu from "@/components/FloatingContactMenu";
 
 function Router() {
@@ -46,26 +29,7 @@ function Router() {
         <Route path={"/testimonials"} component={Testimonials} />
         <Route path={"/faq"} component={FAQ} />
         <Route path={"/contact"} component={Contact} />
-        {/* Test Login */}
-        <Route path={"/test-login"} component={TestLogin} />
-        {/* CMS Routes */}
-        <Route path={"/cms"} component={CMSDashboard} />
-        <Route path={"/cms/services"} component={CMSServices} />
-        <Route path={"/cms/bookings"} component={CMSBookings} />
-        <Route path={"/cms/contacts"} component={CMSContacts} />
-        <Route path={"/cms/media"} component={CMSMedia} />
-        <Route path={"/cms/cases"} component={CMSCases} />
-        <Route path={"/cms/faqs"} component={CMSFAQs} />
-        <Route path={"/cms/blogs"} component={CMSBlogs} />
-        <Route path={"/cms/settings"} component={CMSSettings} />
-        <Route path={"/cms/pages"} component={CMSPages} />
-        <Route path={"/cms/menus"} component={CMSMenus} />
-        <Route path={"/cms/seo"} component={CMSSEO} />
-        <Route path={"/admin/debug"} component={AdminDebug} />
-        <Route path={"/cms/hero"} component={CMSHero} />
-        <Route path={"/cms/footer"} component={CMSFooter} />
-        <Route path={"/cms/reviews"} component={CMSReviews} />
-        <Route path={"/admin-setup"} component={AdminSetup} />
+
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

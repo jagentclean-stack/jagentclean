@@ -1,16 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Menu, X, Calendar, LogOut } from "lucide-react";
+import { Menu, X, Calendar } from "lucide-react";
 import ThemeToggleButton from "./ThemeToggleButton";
 import { Link } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { startLogin } from "@/const";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -80,7 +77,7 @@ export default function Header() {
           </Link>
         </nav>
 
-        {/* 右側：預約按鈕 + 登入/登出 + Dark Mode - 右側 */}
+        {/* 右側：預約按鈕 */}
         <div className="hidden lg:flex items-center gap-4">
           <Link href="/contact">
             <Button 
@@ -98,31 +95,6 @@ export default function Header() {
               立即預約
             </Button>
           </Link>
-          
-          {/* 登入/登出按鈕 */}
-          {isAuthenticated ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-700">{user?.email}</span>
-              <Button 
-                variant="outline"
-                size="sm"
-                onClick={logout}
-                className="rounded-full flex items-center gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                登出
-              </Button>
-            </div>
-          ) : (
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.href = '/test-login'}
-              className="rounded-full"
-            >
-              登入
-            </Button>
-          )}
           
           <ThemeToggleButton />
         </div>
@@ -183,36 +155,6 @@ export default function Header() {
                 立即預約
               </Button>
             </Link>
-            
-            {/* 手機版登入/登出按鈕 */}
-            <div className="w-full border-t pt-4 mt-4">
-              {isAuthenticated ? (
-                <div className="space-y-3">
-                  <div className="text-sm text-gray-700 px-2">{user?.email}</div>
-                  <Button 
-                    variant="outline"
-                    className="w-full rounded-full flex items-center justify-center gap-2"
-                    onClick={() => {
-                      logout();
-                      handleCloseMenu();
-                    }}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    登出
-                  </Button>
-                </div>
-              ) : (
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold rounded-full"
-                  onClick={() => {
-                    window.location.href = '/test-login';
-                    handleCloseMenu();
-                  }}
-                >
-                  登入
-                </Button>
-              )}
-            </div>
           </nav>
         </div>
       )}
