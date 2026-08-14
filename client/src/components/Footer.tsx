@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Facebook, Mail, Phone, MessageCircle } from "lucide-react";

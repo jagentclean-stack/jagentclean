@@ -76,13 +76,14 @@ createRoot(document.getElementById("root")!).render(
   </trpc.Provider>
 );
 
-// Parallax effect for hero background
-window.addEventListener("scroll", () => {
-  const parallaxElements = document.querySelectorAll("[style*=\"--parallax-offset\"]");
-  parallaxElements.forEach((element) => {
-    const scrollPosition = window.scrollY;
-    // Adjust the multiplier for desired parallax speed
-    const offset = scrollPosition * 0.3;
-    (element as HTMLElement).style.setProperty("--parallax-offset", `${offset}px`);
-  });
-});
+// Parallax effect is deliberately registered only in the browser. The guarded
+// entry keeps this module reusable by the future server renderer.
+if (typeof window !== "undefined") {
+  window.addEventListener("scroll", () => {
+    const parallaxElements = document.querySelectorAll("[style*=\"--parallax-offset\"]");
+    parallaxElements.forEach((element) => {
+      const offset = window.scrollY * 0.3;
+      (element as HTMLElement).style.setProperty("--parallax-offset", `${offset}px`);
+    });
+  }, { passive: true });
+}

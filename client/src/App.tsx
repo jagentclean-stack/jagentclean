@@ -36,6 +36,7 @@ import CMSFooter from "./pages/CMSFooter";
 import CMSReviews from "./pages/CMSReviews";
 
 import FloatingContactMenu from "@/components/FloatingContactMenu";
+import SEOHead from "@/components/SEOHead";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -96,6 +97,7 @@ function App() {
           {!isAdminArea && <FloatingButtons />}
           {!isAdminArea && <AIChatAdvisor />}
           {!isAdminArea && <FloatingContactMenu />}
+          {!isAdminArea && <SEOHead pathname={location} />}
           <div className="min-h-screen flex flex-col">
             {!isAdminArea && <Header />}
             <main className="flex-grow">

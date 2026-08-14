@@ -75,6 +75,17 @@
 - [ ] 安全性檢查
 - [ ] SEO 驗證
 
+## SEO 基礎建置
+- [x] 建立公開頁 Meta、Canonical 與 Open Graph 動態管理機制
+- [x] 明確驗證 LocalBusiness、FAQ 與 Breadcrumb 結構化資料的輸出
+- [x] 建立 robots.txt 與 sitemap.xml 並移除未經驗證的結構化資料
+
+## SSR 搜尋可讀性
+- [x] 驗證 Header、Footer、SEOHead 與公開頁殼層在無 window/document/localStorage 的伺服器環境可安全渲染
+- [x] 建立伺服器端公開路由 HTML 與 CMS SEO 資料輸出
+- [ ] 建立用戶端水合與公開資料快取恢復流程
+- [x] 驗證公開路由原始 HTML、404 與管理路由 noindex 行為
+
 ## 部署與發佈
 - [ ] 最終檢查
 - [ ] 部署到生產環境

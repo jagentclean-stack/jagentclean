@@ -51,6 +51,9 @@ export const cmsRouter = router({
     faqs: publicProcedure.query(() => db.getVisibleFAQs()),
     footer: publicProcedure.query(() => db.getPublishedFooter()),
     menus: publicProcedure.query(() => db.getPublicMenuTree()),
+    seo: publicProcedure
+      .input(z.object({ slug: z.string().trim().min(1).max(255) }))
+      .query(({ input }) => db.getSEOBySlug(input.slug)),
   }),
 
   /**

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MessageCircle, Phone, Calendar, ArrowUp, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -6,10 +6,13 @@ export default function FloatingButtons() {
   const [showMenu, setShowMenu] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
-  // 監聽滾動位置以顯示「回到頂部」按鈕
-  window.addEventListener("scroll", () => {
-    setScrollY(window.scrollY);
-  });
+  // 瀏覽器端才監聽捲動；避免 SSR 執行時存取 window，並在卸載時移除監聽器。
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleScrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });

@@ -1,19 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /private
-Disallow: /*.json$
-Disallow: /*.xml$
+Disallow: /cms
 
 Sitemap: https://jagentclean-lnbtuo7t.manus.space/sitemap.xml
-
-# Google-specific
-User-agent: Googlebot
-Allow: /
-
-# Bing-specific
-User-agent: Bingbot
-Allow: /
-
-# Crawl-delay for all bots
-Crawl-delay: 1
