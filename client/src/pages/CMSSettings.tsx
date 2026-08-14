@@ -1,5 +1,4 @@
-import { useState } from "react";
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,6 +14,7 @@ export default function CMSSettings() {
   const { user, isAuthenticated } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const canManageSettings = isAuthenticated && (user?.role === "admin" || ADMIN_EMAILS.has(user?.email ?? ""));
 
   const { data: settingsData, isLoading } = trpc.cms.settings.list.useQuery(undefined, {
@@ -32,11 +32,7 @@ export default function CMSSettings() {
     }
   }, [settingsData]);
 
-  const updateMutation = trpc.cms.settings.updateBatch.useMutation({
-    onSuccess: () => {
-      setIsSaving(false);
-    },
-  });
+  const updateMutation = trpc.cms.settings.updateBatch.useMutation();
 
   const handleInputChange = (key: string, value: string) => {
     setSettings((prev) => ({
@@ -47,10 +43,14 @@ export default function CMSSettings() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveMessage(null);
     try {
       await updateMutation.mutateAsync({
         settings: Object.fromEntries(CMS_SETTING_KEYS.map((key) => [key, settings[key] ?? ""])) as Record<(typeof CMS_SETTING_KEYS)[number], string>,
       });
+      setSaveMessage({ type: "success", text: "設定已儲存並同步至網站。" });
+    } catch (error) {
+      setSaveMessage({ type: "error", text: error instanceof Error ? error.message : "儲存失敗，請稍後再試。" });
     } finally {
       setIsSaving(false);
     }
@@ -84,6 +84,11 @@ export default function CMSSettings() {
             )}
           </Button>
         </div>
+        {saveMessage && (
+          <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-4 text-sm ${saveMessage.type === "success" ? "text-emerald-700" : "text-red-700"}`} role="status">
+            {saveMessage.text}
+          </div>
+        )}
       </div>
 
       {/* Content */}

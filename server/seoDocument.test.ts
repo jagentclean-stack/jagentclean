@@ -20,6 +20,15 @@ describe("伺服器端 SEO 文件組裝", () => {
     expect(servicesHead).not.toContain('"@type":"LocalBusiness"');
   });
 
+  it("只注入符合格式的 GA4 與 Meta Pixel 追蹤碼", () => {
+    const head = buildSeoHead({ origin: "https://example.com", pathname: "/", gaId: "G-ABC12345", metaPixelId: "1234567890" });
+    const unsafeHead = buildSeoHead({ origin: "https://example.com", pathname: "/", gaId: "<script>", metaPixelId: "abc" });
+    expect(head).toContain("googletagmanager.com/gtag/js?id=G-ABC12345");
+    expect(head).toContain("fbq('init','1234567890')");
+    expect(unsafeHead).not.toContain("googletagmanager.com/gtag/js");
+    expect(unsafeHead).not.toContain("fbq('init'");
+  });
+
   it("正確正規化路徑並轉換為 CMS SEO slug", () => {
     expect(getPublicPathname("/cases/?source=test")).toBe("/cases");
     expect(getSeoSlug("/")).toBe("home");

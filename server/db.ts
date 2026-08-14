@@ -659,6 +659,11 @@ export async function getAllSettings() {
   return db.select().from(settings);
 }
 
+export async function getSettingsByKeys(keys: readonly string[]) {
+  const allSettings = await getAllSettings();
+  return allSettings.filter((setting) => keys.includes(setting.key));
+}
+
 export async function createSetting(data: typeof settings.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -668,7 +673,7 @@ export async function createSetting(data: typeof settings.$inferInsert) {
 export async function updateSetting(key: string, value: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(settings).set({ value }).where(eq(settings.key, key));
+  return db.insert(settings).values({ key, value, type: "string" }).onDuplicateKeyUpdate({ set: { value } });
 }
 
 /**

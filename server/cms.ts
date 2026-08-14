@@ -12,7 +12,19 @@ type AllowedRoles = "admin" | "manager" | "customer_service" | "marketing" | "ed
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
 const CMS_SETTING_KEYS = ["site_name", "site_description", "company_phone", "company_email", "line_id", "company_address", "facebook_url", "instagram_url", "ga_id", "meta_pixel_id", "google_map_embed", "copyright_text"] as const;
-const cmsSettingKeySchema = z.enum(CMS_SETTING_KEYS);
+export const cmsSettingKeySchema = z.enum(CMS_SETTING_KEYS);
+
+export function filterCmsSettingsForClient<T extends { key: string }>(items: T[]) {
+  return items.filter((item) => CMS_SETTING_KEYS.includes(item.key as (typeof CMS_SETTING_KEYS)[number]));
+}
+
+export function validateCmsSettingValue(key: z.infer<typeof cmsSettingKeySchema>, value: string) {
+  if (key === "company_phone" && value && !/^[0-9+()\-\s]{6,30}$/.test(value)) throw new Error("公司電話格式不正確");
+  if (key === "company_email" && value && !z.string().email().safeParse(value).success) throw new Error("公司 Email 格式不正確");
+  if (["facebook_url", "instagram_url"].includes(key) && value && !z.string().url().safeParse(value).success) throw new Error("社群連結格式不正確");
+  if (key === "ga_id" && value && !/^G-[A-Z0-9]{4,32}$/i.test(value)) throw new Error("Google Analytics ID 格式不正確");
+  if (key === "meta_pixel_id" && value && !/^\d{5,20}$/.test(value)) throw new Error("Meta Pixel ID 格式不正確");
+}
 
 const checkRole = (userRole: string | undefined | null, userEmailOrFirstRole: string | undefined | null, ...allowedRoles: AllowedRoles[]): boolean => {
   const userEmail = userEmailOrFirstRole?.includes("@") ? userEmailOrFirstRole : null;
@@ -408,16 +420,16 @@ export const cmsRouter = router({
    */
   settings: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin")) {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
         throw new Error("Unauthorized");
       }
-      return db.getAllSettings();
+      return filterCmsSettingsForClient(await db.getSettingsByKeys(CMS_SETTING_KEYS));
     }),
 
     get: protectedProcedure
-      .input(z.object({ key: z.string() }))
+      .input(z.object({ key: cmsSettingKeySchema }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
           throw new Error("Unauthorized");
         }
         return db.getSetting(input.key);
@@ -429,6 +441,7 @@ export const cmsRouter = router({
         if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
           throw new Error("Unauthorized");
         }
+        validateCmsSettingValue(input.key, input.value);
         return db.updateSetting(input.key, input.value);
       }),
     updateBatch: protectedProcedure
@@ -437,6 +450,7 @@ export const cmsRouter = router({
         if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
           throw new Error("Unauthorized");
         }
+        Object.entries(input.settings).forEach(([key, value]) => validateCmsSettingValue(key as z.infer<typeof cmsSettingKeySchema>, value));
         await Promise.all(Object.entries(input.settings).map(([key, value]) => db.updateSetting(key, value)));
         return { success: true, updatedKeys: Object.keys(input.settings) };
       }),

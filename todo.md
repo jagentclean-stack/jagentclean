@@ -87,12 +87,18 @@
 - [x] 驗證公開路由原始 HTML、404 與管理路由 noindex 行為
 
 ## CMS 系統設定安全性
-- [ ] 設定 key 採用白名單與欄位格式驗證
-- [ ] 設定頁採批次儲存、明確成功或失敗回饋與 admin 權限判斷
-- [ ] 將 OpenAI、SMTP、Cloudflare 等秘密憑證排除於 CMS 資料庫表單
-- [ ] 為 CMS 設定每個白名單 key 加入對應格式驗證（Email、URL、GA4、Meta Pixel、電話）
-- [ ] 在設定讀取 API 過濾敏感設定 keys，避免任何秘密值回傳至前端
-- [ ] 補上 CMS Settings 儲存成功／失敗提示與設定安全性的自動化測試
+- [x] 設定 key 採用白名單與欄位格式驗證
+- [x] 設定頁採批次儲存、明確成功或失敗回饋與 admin 權限判斷
+- [x] 將 OpenAI、SMTP、Cloudflare 等秘密憑證排除於 CMS 資料庫表單
+- [x] 為 CMS 設定每個白名單 key 加入對應格式驗證（Email、URL、GA4、Meta Pixel、電話）
+- [x] 在設定讀取 API 過濾敏感設定 keys，避免任何秘密值回傳至前端
+- [x] 補上 CMS Settings 儲存成功／失敗提示與設定安全性的自動化測試
+- [x] 公開頁初始 HTML 依 CMS 設定安全注入 GA4 與 Meta Pixel 追蹤碼
+- [x] 為 CMS Settings 新增自動化測試，覆蓋合法／非法 Email、URL、GA4、Meta Pixel 與電話輸入
+- [ ] 確認敏感設定僅可透過伺服器端安全管道管理，CMS 表單與設定讀取 API 僅回傳白名單鍵
+- [x] 新增 CMSSettings 頁面測試，覆蓋批次儲存成功與失敗時的回饋訊息
+- [x] 新增 settings API 測試，驗證敏感鍵不會被 list/get/update/updateBatch 讀取或寫入
+- [x] 驗證 CMSSettings 批次儲存失敗時保留使用者輸入，且不誤顯示成功提示
 
 ## 部署與發佈
 - [ ] 最終檢查

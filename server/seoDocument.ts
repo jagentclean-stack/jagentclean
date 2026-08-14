@@ -61,7 +61,7 @@ function isSafeCanonical(value: string | null | undefined, fallback: string) {
   }
 }
 
-export function buildSeoHead({ origin, pathname, seo, faqs = [], noindex = false }: { origin: string; pathname: string; seo?: SeoRecord | null; faqs?: Array<{ question: string; answer: string | null }>; noindex?: boolean }) {
+export function buildSeoHead({ origin, pathname, seo, faqs = [], noindex = false, gaId, metaPixelId }: { origin: string; pathname: string; seo?: SeoRecord | null; faqs?: Array<{ question: string; answer: string | null }>; noindex?: boolean; gaId?: string; metaPixelId?: string }) {
   const page = PAGE_DETAILS[pathname] ?? { label: "頁面", summary: DEFAULT_DESCRIPTION };
   const canonical = isSafeCanonical(seo?.canonical, `${origin}${pathname}`);
   const title = seo?.title || `${page.label}｜${SITE_NAME}`;
@@ -93,6 +93,8 @@ export function buildSeoHead({ origin, pathname, seo, faqs = [], noindex = false
     mainEntity: completeFaqs.map((faq) => ({ "@type": "Question", name: faq.question, acceptedAnswer: { "@type": "Answer", text: faq.answer } })),
   } : null;
   const customSchema = parseSchema(seo?.schema);
+  const safeGaId = gaId && /^G-[A-Z0-9]{4,32}$/i.test(gaId) ? gaId.toUpperCase() : null;
+  const safeMetaPixelId = metaPixelId && /^\d{5,20}$/.test(metaPixelId) ? metaPixelId : null;
 
   return [
     `<title>${escapeHtml(title)}</title>`,
@@ -113,6 +115,8 @@ export function buildSeoHead({ origin, pathname, seo, faqs = [], noindex = false
     localBusiness ? `<script id="cms-local-business-schema" type="application/ld+json">${escapeJson(localBusiness)}</script>` : "",
     faqSchema ? `<script id="cms-faq-schema" type="application/ld+json">${escapeJson(faqSchema)}</script>` : "",
     customSchema ? `<script id="cms-page-schema" type="application/ld+json">${escapeJson(customSchema)}</script>` : "",
+    safeGaId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${safeGaId}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${safeGaId}');</script>` : "",
+    safeMetaPixelId ? `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${safeMetaPixelId}');fbq('track','PageView');</script>` : "",
   ].join("\n");
 }
 
@@ -128,7 +132,10 @@ export async function getSeoDocument(requestUrl: string, origin: string) {
   const isAdminRoute = pathname === "/admin/login" || pathname === "/admin/debug" || pathname.startsWith("/cms");
   const seo = isPublicRoute ? await db.getSEOBySlug(getSeoSlug(pathname)) : null;
   const faqs = pathname === "/faq" ? await db.getVisibleFAQs() : [];
-  const head = buildSeoHead({ origin, pathname, seo, faqs, noindex: isAdminRoute || !isPublicRoute });
+  const trackingSettings = isPublicRoute ? await db.getSettingsByKeys(["ga_id", "meta_pixel_id"]) : [];
+  const gaId = trackingSettings.find((setting) => setting.key === "ga_id")?.value ?? undefined;
+  const metaPixelId = trackingSettings.find((setting) => setting.key === "meta_pixel_id")?.value ?? undefined;
+  const head = buildSeoHead({ origin, pathname, seo, faqs, noindex: isAdminRoute || !isPublicRoute, gaId, metaPixelId });
   const title = seo?.title || `${PAGE_DETAILS[pathname]?.label || "頁面"}｜${SITE_NAME}`;
   const description = seo?.description || PAGE_DETAILS[pathname]?.summary || DEFAULT_DESCRIPTION;
 
