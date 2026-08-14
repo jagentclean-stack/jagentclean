@@ -47,3 +47,7 @@ Service-specific FAQs now use the nullable `faqs.serviceId` foreign-key relation
 ## 2026-08-14 — FAQ edit feedback coverage
 
 The CMS FAQ editor now gives an explicit success notice after creating or updating a record, while failed saves keep the dialog open and render the returned error. Its page tests cover denied access, service-linked creation, sort and visibility values, deletion confirmation, a complete existing-FAQ update, success feedback, and failure recovery. The full suite passes 27 files / 65 tests and the production build completes successfully.
+
+## 2026-08-14 — Media search and batch upload
+
+The media center now imports its React hooks safely at runtime, supports keyword search across filename, category, and alternative text, and accepts a validated selection of multiple files. Files are uploaded sequentially so each upload receives the existing server-side file signature and size checks; the panel resets only after the final file succeeds. Tests cover denied access, search filtering, and two-file upload sequencing. The complete suite passes 28 files / 68 tests and the production build succeeds.

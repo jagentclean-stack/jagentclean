@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import React, { type ChangeEvent, useRef, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,10 +14,11 @@ export default function CMSMedia() {
   const [category, setCategory] = useState("all");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadCategory, setUploadCategory] = useState("");
   const [uploadAlt, setUploadAlt] = useState("");
   const [uploadError, setUploadError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: media, isLoading, refetch } = trpc.cms.media.list.useQuery(undefined, {
@@ -29,19 +30,15 @@ export default function CMSMedia() {
   });
 
   const uploadMutation = trpc.cms.media.upload.useMutation({
-    onSuccess: () => {
-      setSelectedFile(null);
-      setUploadCategory("");
-      setUploadAlt("");
-      setUploadError("");
-      setIsUploadOpen(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      refetch();
-    },
     onError: (error) => setUploadError(error.message || "上傳失敗，請稍後再試。"),
   });
 
-  const filteredMedia = media?.filter((item) => category === "all" || item.category === category);
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase("zh-TW");
+  const filteredMedia = media?.filter((item) => {
+    const matchesCategory = category === "all" || item.category === category;
+    const searchContent = [item.filename, item.category, item.alt].filter(Boolean).join(" ").toLocaleLowerCase("zh-TW");
+    return matchesCategory && (!normalizedSearch || searchContent.includes(normalizedSearch));
+  });
   const categories = Array.from(new Set(media?.map((item) => item.category).filter(Boolean))) as string[];
 
   const handleCopyUrl = (url: string, id: number) => {
@@ -51,44 +48,54 @@ export default function CMSMedia() {
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
+    const files = Array.from(event.target.files ?? []);
     setUploadError("");
-    if (!file) return;
+    if (!files.length) return;
 
-    if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
-      setSelectedFile(null);
-      setUploadError("僅支援 JPG、PNG、WebP、GIF、MP4 與 WebM 檔案。");
+    const invalidType = files.find((file) => !ALLOWED_MEDIA_TYPES.includes(file.type));
+    if (invalidType) {
+      setSelectedFiles([]);
+      setUploadError(`「${invalidType.name}」格式不支援；僅支援 JPG、PNG、WebP、GIF、MP4 與 WebM。`);
       return;
     }
-    if (file.size > MAX_MEDIA_BYTES) {
-      setSelectedFile(null);
-      setUploadError("檔案不得超過 20 MB。");
+    const oversized = files.find((file) => file.size > MAX_MEDIA_BYTES);
+    if (oversized) {
+      setSelectedFiles([]);
+      setUploadError(`「${oversized.name}」超過 20 MB 限制。`);
       return;
     }
-    setSelectedFile(file);
+    setSelectedFiles(files);
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
+    if (!selectedFiles.length) {
       setUploadError("請先選擇要上傳的檔案。");
       return;
     }
 
     try {
       setUploadError("");
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error("無法讀取選取的檔案。"));
-        reader.readAsDataURL(selectedFile);
-      });
-      await uploadMutation.mutateAsync({
-        filename: selectedFile.name,
-        dataUrl,
-        mimeType: selectedFile.type,
-        category: uploadCategory.trim() || undefined,
-        alt: uploadAlt.trim() || undefined,
-      });
+      for (const selectedFile of selectedFiles) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error(`無法讀取「${selectedFile.name}」。`));
+          reader.readAsDataURL(selectedFile);
+        });
+        await uploadMutation.mutateAsync({
+          filename: selectedFile.name,
+          dataUrl,
+          mimeType: selectedFile.type,
+          category: uploadCategory.trim() || undefined,
+          alt: uploadAlt.trim() || undefined,
+        });
+      }
+      setSelectedFiles([]);
+      setUploadCategory("");
+      setUploadAlt("");
+      setIsUploadOpen(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      await refetch();
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "上傳失敗，請稍後再試。");
     }
@@ -125,8 +132,8 @@ export default function CMSMedia() {
             <div className="flex flex-col gap-5 md:flex-row md:items-end">
               <div className="flex-1 space-y-2">
                 <label className="text-sm font-medium text-gray-800" htmlFor="media-file">檔案</label>
-                <Input ref={fileInputRef} id="media-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" onChange={handleFileChange} disabled={uploadMutation.isPending} />
-                <p className="text-xs text-gray-500">支援 JPG、PNG、WebP、GIF、MP4、WebM，單檔上限 20 MB。</p>
+                <Input ref={fileInputRef} id="media-file" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" onChange={handleFileChange} disabled={uploadMutation.isPending} />
+                <p className="text-xs text-gray-500">支援 JPG、PNG、WebP、GIF、MP4、WebM；可一次選多檔，單檔上限 20 MB。</p>
               </div>
               <div className="flex-1 space-y-2">
                 <label className="text-sm font-medium text-gray-800" htmlFor="media-category">分類</label>
@@ -138,13 +145,13 @@ export default function CMSMedia() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={closeUploadPanel} disabled={uploadMutation.isPending}>取消</Button>
-                <Button onClick={handleUpload} disabled={!selectedFile || uploadMutation.isPending}>
+                <Button onClick={handleUpload} disabled={!selectedFiles.length || uploadMutation.isPending}>
                   {uploadMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                   {uploadMutation.isPending ? "上傳中" : "開始上傳"}
                 </Button>
               </div>
             </div>
-            {selectedFile && <p className="mt-4 text-sm text-gray-600">已選取：{selectedFile.name}（{Math.ceil(selectedFile.size / 1024)} KB）</p>}
+            {selectedFiles.length > 0 && <p className="mt-4 text-sm text-gray-600">已選取 {selectedFiles.length} 個檔案：{selectedFiles.map((file) => file.name).join("、")}</p>}
             {uploadError && <p role="alert" className="mt-4 text-sm font-medium text-red-600">{uploadError}</p>}
           </Card>
         </div>
@@ -152,13 +159,16 @@ export default function CMSMedia() {
 
       <div className="mt-6 border-y border-gray-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            <button onClick={() => setCategory("all")} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${category === "all" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}>全部 ({media?.length || 0})</button>
-            {categories.map((itemCategory) => (
-              <button key={itemCategory} onClick={() => setCategory(itemCategory)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${category === itemCategory ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}>
-                {itemCategory} ({media?.filter((item) => item.category === itemCategory).length || 0})
-              </button>
-            ))}
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <button onClick={() => setCategory("all")} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${category === "all" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}>全部 ({media?.length || 0})</button>
+              {categories.map((itemCategory) => (
+                <button key={itemCategory} onClick={() => setCategory(itemCategory)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${category === itemCategory ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}>
+                  {itemCategory} ({media?.filter((item) => item.category === itemCategory).length || 0})
+                </button>
+              ))}
+            </div>
+            <Input aria-label="搜尋媒體" className="max-w-sm bg-white" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="搜尋檔名、分類或替代文字" />
           </div>
         </div>
       </div>
@@ -186,7 +196,7 @@ export default function CMSMedia() {
             ))}
           </div>
         ) : (
-          <Card className="p-12 text-center"><ImageIcon className="mx-auto mb-4 h-12 w-12 text-gray-300" /><p className="text-gray-600">無媒體檔案</p></Card>
+          <Card className="p-12 text-center"><ImageIcon className="mx-auto mb-4 h-12 w-12 text-gray-300" /><p className="text-gray-600">{media?.length ? "找不到符合條件的媒體檔案" : "無媒體檔案"}</p></Card>
         )}
       </div>
     </div>
