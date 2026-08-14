@@ -6,6 +6,7 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import {
   isAdminEmail,
   normalizeAdminEmail,
+  verifyCmsUserPassword,
   verifyAdminPassword,
 } from "./adminAuth";
 
@@ -16,13 +17,28 @@ export function registerAdminLoginRoutes(app: Express) {
       typeof req.body?.password === "string" ? req.body.password : "";
     const normalizedEmail = normalizeAdminEmail(email);
 
-    if (!isAdminEmail(normalizedEmail) || !verifyAdminPassword(password)) {
+    const existingUser = await db.getUserByEmail(normalizedEmail);
+    const isHighestAdmin = isAdminEmail(normalizedEmail);
+    const isAuthenticated = isHighestAdmin
+      ? verifyAdminPassword(password)
+      : await verifyCmsUserPassword(password, existingUser?.passwordHash);
+
+    if (!isAuthenticated) {
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
+
+    if (existingUser && !existingUser.isActive) {
+      res.status(403).json({ error: "This account has been deactivated" });
+      return;
+    }
+
+    if (!existingUser && !isHighestAdmin) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
     try {
-      const existingUser = await db.getUserByEmail(normalizedEmail);
       const openId = existingUser?.openId ?? `cms-admin:${normalizedEmail}`;
 
       await db.upsertUser({
@@ -30,7 +46,8 @@ export function registerAdminLoginRoutes(app: Express) {
         email: normalizedEmail,
         name: existingUser?.name ?? normalizedEmail.split("@")[0],
         loginMethod: "cms_password",
-        role: "admin",
+        role: existingUser?.role ?? "super_admin",
+        isActive: true,
         lastSignedIn: new Date(),
       });
 

@@ -5,11 +5,30 @@ import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import nodemailer from "nodemailer";
 import { cmsRouter } from "./cms";
+import type { User } from "../drizzle/schema";
+
+export type PublicSessionUser = Pick<User, "id" | "openId" | "name" | "email" | "loginMethod" | "role" | "isActive" | "createdAt" | "updatedAt" | "lastSignedIn">;
+
+export function serializePublicUser(user: User | null): PublicSessionUser | null {
+  if (!user) return null;
+  return {
+    id: user.id,
+    openId: user.openId,
+    name: user.name,
+    email: user.email,
+    loginMethod: user.loginMethod,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    lastSignedIn: user.lastSignedIn,
+  };
+}
 
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => serializePublicUser(opts.ctx.user)),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

@@ -34,6 +34,8 @@ import CMSFAQs from "./pages/CMSFAQs";
 import CMSHero from "./pages/CMSHero";
 import CMSFooter from "./pages/CMSFooter";
 import CMSReviews from "./pages/CMSReviews";
+import CMSPrices from "./pages/CMSPrices";
+import CMSUsers from "./pages/CMSUsers";
 
 import FloatingContactMenu from "@/components/FloatingContactMenu";
 import SEOHead from "@/components/SEOHead";
@@ -69,6 +71,8 @@ function Router() {
         <Route path={"/cms/hero"} component={CMSHero} />
         <Route path={"/cms/footer"} component={CMSFooter} />
         <Route path={"/cms/reviews"} component={CMSReviews} />
+        <Route path={"/cms/prices"} component={CMSPrices} />
+        <Route path={"/cms/users"} component={CMSUsers} />
 
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}

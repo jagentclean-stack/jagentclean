@@ -1,4 +1,5 @@
-import { timingSafeEqual } from "node:crypto";
+import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 
 export const ADMIN_EMAILS = [
   "jagentclean@gmail.com",
@@ -25,3 +26,18 @@ export function verifyAdminPassword(candidate: string): boolean {
 
   return timingSafeEqual(expected, provided);
 }
+
+export async function hashCmsUserPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = (await scrypt(password, salt, 64)) as Buffer;
+  return `scrypt$${salt}$${derivedKey.toString("hex")}`;
+}
+
+export async function verifyCmsUserPassword(candidate: string, storedHash: string | null | undefined): Promise<boolean> {
+  const [algorithm, salt, storedKey] = storedHash?.split("$") ?? [];
+  if (algorithm !== "scrypt" || !salt || !storedKey) return false;
+  const expected = Buffer.from(storedKey, "hex");
+  const provided = (await scrypt(candidate, salt, 64)) as Buffer;
+  return expected.length === provided.length && timingSafeEqual(expected, provided);
+}
+const scrypt = promisify(scryptCallback);

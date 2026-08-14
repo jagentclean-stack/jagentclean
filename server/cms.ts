@@ -1,12 +1,14 @@
 import { z } from "zod";
 import * as db from "./db";
+import { createHash } from "crypto";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { hashCmsUserPassword } from "./adminAuth";
 import { storagePut } from "./storage";
 import { decodeMediaUpload, mediaStorageFilename } from "./mediaUpload";
 import { BOOKING_STATUSES } from "../shared/business";
 
 // Type assertion helper for role checking
-type AllowedRoles = "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
+type AllowedRoles = "super_admin" | "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
 
 // 管理員 email 白名單
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
@@ -36,6 +38,14 @@ const checkRole = (userRole: string | undefined | null, userEmailOrFirstRole: st
   return resolvedRoles.includes(userRole as AllowedRoles);
 };
 
+const priceValueSchema = z.string().trim().regex(/^$|^\d+(?:\.\d{1,2})?$/, "價格僅能輸入最多兩位小數的非負數").optional();
+const cmsUserRoleSchema = z.enum(["super_admin", "admin", "manager", "customer_service", "marketing", "editor", "user"]);
+
+export function onlyPublishedServices<T extends { isPublished: boolean | null }>(records: T[]) {
+  return records.filter((service) => service.isPublished === true);
+}
+const isHighestAdmin = (email: string | null | undefined) => Boolean(email && ADMIN_EMAILS.includes(email));
+
 /**
  * CMS Dashboard Router
  * 處理所有後台管理功能
@@ -60,7 +70,7 @@ export const cmsRouter = router({
         footer: footerContent,
       };
     }),
-    services: publicProcedure.query(() => db.getPublishedServices()),
+    services: publicProcedure.query(async () => onlyPublishedServices(await db.getPublishedServices())),
     cases: publicProcedure.query(() => db.getPublishedCases()),
     blogs: publicProcedure.query(() => db.getPublishedBlogs()),
     faqs: publicProcedure.query(() => db.getVisibleFAQs()),
@@ -200,9 +210,11 @@ export const cmsRouter = router({
           description: z.string().optional(),
           icon: z.string().optional(),
           bannerImage: z.string().optional(),
-          basePrice: z.string().optional(),
-          pricePerUnit: z.string().optional(),
+          basePrice: priceValueSchema,
+          pricePerUnit: priceValueSchema,
           unit: z.string().optional(),
+          promotion: z.string().trim().max(255).optional(),
+          priceNote: z.string().trim().max(1000).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -221,9 +233,11 @@ export const cmsRouter = router({
           description: z.string().optional(),
           icon: z.string().optional(),
           bannerImage: z.string().optional(),
-          basePrice: z.string().optional(),
-          pricePerUnit: z.string().optional(),
+          basePrice: priceValueSchema,
+          pricePerUnit: priceValueSchema,
           unit: z.string().optional(),
+          promotion: z.string().trim().max(255).optional(),
+          priceNote: z.string().trim().max(1000).optional(),
           isPublished: z.boolean().optional(),
         })
       )
@@ -232,6 +246,8 @@ export const cmsRouter = router({
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
+        if (data.basePrice === "") data.basePrice = null as any;
+        if (data.pricePerUnit === "") data.pricePerUnit = null as any;
         return db.updateService(id, data as any);
       }),
 
@@ -751,26 +767,86 @@ export const cmsRouter = router({
    * Users Management
    */
   users: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+      return db.getAllUsers();
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().trim().min(1).max(120),
+        email: z.string().trim().email().max(320),
+        role: cmsUserRoleSchema.default("user"),
+        initialPassword: z.string().min(12, "初始密碼至少需要 12 個字元").max(128),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+        if (input.role === "super_admin" && !isHighestAdmin(ctx.user?.email)) throw new Error("只有最高權限管理員可建立 Super Admin");
+        const email = input.email.toLowerCase();
+        if (await db.getUserByEmail(email)) throw new Error("此 Email 已建立員工帳號");
+        return db.createCmsUser({
+          openId: `cms-user:${createHash("sha256").update(email).digest("hex")}`,
+          name: input.name,
+          email,
+          loginMethod: "cms_password",
+          passwordHash: await hashCmsUserPassword(input.initialPassword),
+          role: input.role,
+          isActive: true,
+          lastSignedIn: new Date(),
+        });
+      }),
     updateRole: protectedProcedure
       .input(
         z.object({
-          email: z.string().email(),
-          role: z.enum(['admin', 'manager', 'customer_service', 'marketing', 'editor', 'user']),
-        })
+          id: z.number().int().positive().optional(),
+          email: z.string().email().optional(),
+          role: cmsUserRoleSchema,
+        }).refine((input) => input.id !== undefined || input.email !== undefined, "請提供使用者 ID 或 Email")
       )
       .mutation(async ({ input, ctx }) => {
-        // 只允許 Admin 更新使用者角色
-        if (!checkRole(ctx.user?.role, 'admin')) {
-          throw new Error('Unauthorized');
-        }
-
-        const user = await db.getUserByEmail(input.email);
-        if (!user) {
-          throw new Error('User not found');
-        }
-
-        await db.updateUserRole(user.id, input.role);
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+        if (input.role === "super_admin" && !isHighestAdmin(ctx.user?.email)) throw new Error("只有最高權限管理員可授予 Super Admin");
+        const user = input.id !== undefined
+          ? (await db.getAllUsers()).find((candidate) => candidate.id === input.id)
+          : await db.getUserByEmail(input.email!.toLowerCase());
+        if (!user) throw new Error("User not found");
+        if (user.role === "super_admin" && !isHighestAdmin(ctx.user?.email)) throw new Error("只有最高權限管理員可調整 Super Admin");
+        await db.updateUserRoleAndStatus(user.id, { role: input.role });
         return { success: true, message: `User role updated to ${input.role}` };
+      }),
+    updateProfile: protectedProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        name: z.string().trim().min(1).max(120),
+        email: z.string().trim().email().max(320),
+        newPassword: z.string().min(12, "重設密碼至少需要 12 個字元").max(128).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+        const user = (await db.getAllUsers()).find((candidate) => candidate.id === input.id);
+        if (!user) throw new Error("User not found");
+        if ((user.role === "super_admin" || isHighestAdmin(user.email)) && !isHighestAdmin(ctx.user?.email)) {
+          throw new Error("只有最高權限管理員可編輯 Super Admin");
+        }
+        const email = input.email.toLowerCase();
+        const existing = await db.getUserByEmail(email);
+        if (existing && existing.id !== user.id) throw new Error("此 Email 已建立員工帳號");
+        await db.updateCmsUserProfile(user.id, {
+          name: input.name,
+          email,
+          ...(input.newPassword ? { passwordHash: await hashCmsUserPassword(input.newPassword) } : {}),
+        });
+        return { success: true };
+      }),
+    setActive: protectedProcedure
+      .input(z.object({ id: z.number().int().positive(), isActive: z.boolean() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+        const user = (await db.getAllUsers()).find((candidate) => candidate.id === input.id);
+        if (!user) throw new Error("User not found");
+        if (user.role === "super_admin" || isHighestAdmin(user.email)) throw new Error("最高權限管理員帳號不可停用");
+        if (user.id === ctx.user?.id) throw new Error("不可停用目前登入帳號");
+        await db.updateUserRoleAndStatus(user.id, { isActive: input.isActive });
+        return { success: true };
       }),
   }),
   /**

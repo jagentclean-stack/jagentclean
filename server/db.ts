@@ -101,7 +101,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     };
     const updateSet: Record<string, unknown> = {};
 
-    const textFields = ["name", "email", "loginMethod"] as const;
+    const textFields = ["name", "email", "loginMethod", "passwordHash"] as const;
     type TextField = (typeof textFields)[number];
 
     const assignNullable = (field: TextField) => {
@@ -124,6 +124,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     } else if (user.openId === ENV.ownerOpenId) {
       values.role = 'admin';
       updateSet.role = 'admin';
+    }
+    if (user.isActive !== undefined) {
+      values.isActive = user.isActive;
+      updateSet.isActive = user.isActive;
     }
 
     if (!values.lastSignedIn) {
@@ -167,10 +171,41 @@ export async function getUserByEmail(email: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateUserRole(userId: number, role: 'admin' | 'manager' | 'customer_service' | 'marketing' | 'editor' | 'user') {
+export async function updateUserRole(userId: number, role: 'super_admin' | 'admin' | 'manager' | 'customer_service' | 'marketing' | 'editor' | 'user') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.update(users).set({ role }).where(eq(users.id, userId));
+}
+
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  const records = await db.select().from(users).orderBy(desc(users.updatedAt));
+  return records.map(({ passwordHash: _passwordHash, ...user }) => user);
+}
+
+export async function createCmsUser(data: InsertUser) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(users).values(data);
+}
+
+export async function updateUserRoleAndStatus(
+  userId: number,
+  data: Partial<Pick<InsertUser, "role" | "isActive" | "name" | "passwordHash">>,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set(data).where(eq(users.id, userId));
+}
+
+export async function updateCmsUserProfile(
+  userId: number,
+  data: Partial<Pick<InsertUser, "name" | "email" | "passwordHash">>,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users).set(data).where(eq(users.id, userId));
 }
 
 /**

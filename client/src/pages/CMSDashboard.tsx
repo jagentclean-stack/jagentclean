@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Loader2, BarChart3, Package, FileText, Calendar, Mail, Image as ImageIcon, Settings, Zap } from "lucide-react";
+import { Loader2, BarChart3, Package, FileText, Calendar, Mail, Image as ImageIcon, Settings, Zap, CircleDollarSign, UsersRound } from "lucide-react";
 
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
 export default function CMSDashboard() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
-  const isAdmin = user?.role === "admin" || (user?.email && ADMIN_EMAILS.includes(user.email));
+  const isAdmin = user?.role === "super_admin" || user?.role === "admin" || (user?.email && ADMIN_EMAILS.includes(user.email));
   const { data: dashboardData, isLoading } = trpc.cms.dashboard.useQuery(undefined, {
     enabled: isAuthenticated && !!isAdmin,
   });
@@ -160,6 +160,18 @@ export default function CMSDashboard() {
                 <Button variant="outline" className="w-full justify-start">
                   <Package className="w-4 h-4 mr-2" />
                   服務管理
+                </Button>
+              </Link>
+              <Link href="/cms/prices">
+                <Button variant="outline" className="w-full justify-start">
+                  <CircleDollarSign className="w-4 h-4 mr-2" />
+                  價格管理
+                </Button>
+              </Link>
+              <Link href="/cms/users">
+                <Button variant="outline" className="w-full justify-start">
+                  <UsersRound className="w-4 h-4 mr-2" />
+                  員工管理
                 </Button>
               </Link>
               <Link href="/cms/cases">

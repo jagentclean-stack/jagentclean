@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
 
@@ -5,9 +6,10 @@ interface ServiceCardProps {
   icon: LucideIcon;
   title: string;
   description: string;
+  children?: React.ReactNode;
 }
 
-export default function ServiceCard({ icon: Icon, title, description }: ServiceCardProps) {
+export default function ServiceCard({ icon: Icon, title, description, children }: ServiceCardProps) {
   return (
     <Card className="border-0 bg-white soft-shadow hover:shadow-lg transition-all duration-300 ease-out group">
       <CardContent className="p-8 flex flex-col items-start space-y-6">
@@ -29,6 +31,7 @@ export default function ServiceCard({ icon: Icon, title, description }: ServiceC
         
         {/* 描述 */}
         <p className="text-gray-600 text-base leading-relaxed">{description}</p>
+        {children}
       </CardContent>
     </Card>
   );

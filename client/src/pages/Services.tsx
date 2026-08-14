@@ -1,121 +1,22 @@
+import React from "react";
 import { Link } from "wouter";
+import { Building2, Home, ShieldCheck, Sparkles } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
-import { Briefcase, ShieldCheck, Zap, Factory, HomeIcon, Building2, Droplets, Wind, Sofa, Zap as Sparkle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ServiceCard from "@/components/ServiceCard";
+import { trpc } from "@/lib/trpc";
+
+const icons = [Home, Sparkles, ShieldCheck, Building2];
+const money = (value: unknown) => Number(value).toLocaleString("zh-TW", { maximumFractionDigits: 2 });
 
 export default function Services() {
-  return (
-    <div className="min-h-screen pt-20 bg-background">
-      <div className="container mx-auto px-4 lg:px-8 py-12">
-        <AnimatedSection>
-          <h1 className="text-5xl font-bold text-center text-primary mb-8">
-            我們的專業服務項目
-          </h1>
-        </AnimatedSection>
-        <AnimatedSection delay={100}>
-          <p className="text-xl text-center text-muted-foreground mb-12">
-            潔特務清潔提供多元化、客製化的企業級清潔方案，滿足您不同的需求。
-          </p>
-        </AnimatedSection>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <AnimatedSection delay={0}>
-            <ServiceCard
-              icon={HomeIcon}
-              title="🏠 居家清潔＆裝潢細清"
-              description="提供居家日常清潔與新裝潢後的細部清潔，清除殘留粉塵、油漆漬等，恢復潔淨。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={100}>
-            <ServiceCard
-              icon={Sparkle}
-              title="🪵 石材保養＆研磨拋光"
-              description="針對大理石、花崗岩等特殊材質，提供專業清潔、研磨拋光與保養服務。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={200}>
-            <ServiceCard
-              icon={ShieldCheck}
-              title="💎 居家鍍膜，防汙更持久"
-              description="使用專業鍍膜技術，為地板、牆面等表面提供長效防汙保護。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={0}>
-            <ServiceCard
-              icon={Droplets}
-              title="💦 水塔清洗，確保用水安全"
-              description="定期清洗水塔，去除沉積物與細菌，確保飲用水安全衛生。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={100}>
-            <ServiceCard
-              icon={Sofa}
-              title="🛋 地毯＆沙發清潔保養"
-              description="使用專業設備與環保清潔劑，深度清潔地毯與沙發，延長使用壽命。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={200}>
-            <ServiceCard
-              icon={Building2}
-              title="🏢 外牆高壓清洗"
-              description="採用高壓清洗技術，有效清除外牆污垢、苔蘚，恢復建築美觀。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={0}>
-            <ServiceCard
-              icon={HomeIcon}
-              title="🛏 洗床除塵蟎，守護健康"
-              description="專業床鋪清潔服務，有效去除塵蟎與過敏原，守護家人健康。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={100}>
-            <ServiceCard
-              icon={Wind}
-              title="🌀 洗衣機＆冷氣機深度清潔"
-              description="深度清潔洗衣機與冷氣機內部，去除污垢與細菌，提高效能與衛生。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={200}>
-            <ServiceCard
-              icon={Briefcase}
-              title="辦公室日常清潔"
-              description="提供辦公區域、會議室、茶水間等日常清潔維護，保持整潔舒適的工作環境。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={0}>
-            <ServiceCard
-              icon={Factory}
-              title="商業空間深度清潔"
-              description="針對零售店、餐廳、展覽空間等，提供定期或單次的深度清潔服務。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={100}>
-            <ServiceCard
-              icon={HomeIcon}
-              title="高端住宅物業清潔"
-              description="為高級住宅社區提供專業物業清潔管理，提升居住品質。"
-            />
-          </AnimatedSection>
-          <AnimatedSection delay={200}>
-            <ServiceCard
-              icon={ShieldCheck}
-              title="定期消毒與除塵"
-              description="使用專業設備進行空間消毒，有效抑制細菌病毒，保障健康。"
-            />
-          </AnimatedSection>
-        </div>
-
-        <AnimatedSection>
-          <div className="text-center mt-16">
-            <Link href="/contact">
-              <Button variant="default" size="lg" className="soft-shadow hover:scale-105 transition-transform duration-300">
-                立即預約免費諮詢
-              </Button>
-            </Link>
-          </div>
-        </AnimatedSection>
-      </div>
-    </div>
-  );
+  const { data: services, isLoading, isError } = trpc.cms.publicContent.services.useQuery();
+  return <div className="min-h-screen bg-background pt-20"><div className="container py-16 lg:py-24">
+    <AnimatedSection><h1 className="text-center text-4xl font-bold tracking-tight text-[#163C72] md:text-5xl">我們的專業服務項目</h1></AnimatedSection>
+    <AnimatedSection delay={100}><p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-muted-foreground">依照您的空間、材質與服務需求，提供可客製化的專業清潔方案。</p></AnimatedSection>
+    {isLoading ? <div className="py-24 text-center text-slate-500">正在載入服務項目…</div> : isError ? <div role="alert" className="py-24 text-center text-slate-600">服務資訊暫時無法載入，請稍後再試或透過 LINE 與我們聯繫。</div> : services?.length ? <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">{services.map((service, index) => <AnimatedSection key={service.id} delay={Math.min(index * 60, 300)}><ServiceCard icon={icons[index % icons.length]} title={service.name} description={service.description || "由專業團隊依現場需求提供服務規劃。"}>
+      {(service.basePrice || service.pricePerUnit || service.promotion || service.priceNote) && <div className="w-full rounded-2xl bg-slate-50 p-4 text-sm"><div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[#163C72]">{service.basePrice && <span className="text-lg font-bold">NT$ {money(service.basePrice)} 起</span>}{service.pricePerUnit && <span className="font-medium">NT$ {money(service.pricePerUnit)}{service.unit ? `／${service.unit}` : ""}</span>}</div>{service.promotion && <p className="mt-2 font-semibold text-[#6d9e21]">{service.promotion}</p>}{service.priceNote && <p className="mt-2 leading-6 text-slate-500">{service.priceNote}</p>}</div>}
+    </ServiceCard></AnimatedSection>)}</div> : <div className="py-24 text-center text-slate-500">服務內容即將更新，歡迎先透過 LINE 與我們諮詢。</div>}
+    <AnimatedSection><div className="mt-16 text-center"><a href="https://lin.ee/ynvoHjh" target="_blank" rel="noopener noreferrer"><Button size="lg" className="bg-[#8CC63F] px-8 text-[#163C72] hover:bg-[#7bb430]">透過 LINE 取得免費報價</Button></a><Link href="/contact"><Button size="lg" variant="outline" className="ml-3 border-[#163C72] text-[#163C72]">聯絡我們</Button></Link></div></AnimatedSection>
+  </div></div>;
 }

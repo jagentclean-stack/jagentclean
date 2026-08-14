@@ -22,6 +22,27 @@
       "when": 1785911460346,
       "tag": "0002_material_spyke",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1786697903001,
+      "tag": "0003_chilly_corsair",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786698224000,
+      "tag": "0004_services_promotion",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1786698563767,
+      "tag": "0005_even_blob",
+      "breakpoints": true
     }
   ]
 }
