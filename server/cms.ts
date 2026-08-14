@@ -210,11 +210,17 @@ export const cmsRouter = router({
           description: z.string().optional(),
           icon: z.string().optional(),
           bannerImage: z.string().optional(),
+          process: z.string().optional(),
+          video: z.string().optional(),
           basePrice: priceValueSchema,
           pricePerUnit: priceValueSchema,
           unit: z.string().optional(),
           promotion: z.string().trim().max(255).optional(),
           priceNote: z.string().trim().max(1000).optional(),
+          isPublished: z.boolean().optional(),
+          seoTitle: z.string().trim().max(255).optional(),
+          seoDescription: z.string().trim().max(500).optional(),
+          seoKeywords: z.string().trim().max(500).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -233,12 +239,17 @@ export const cmsRouter = router({
           description: z.string().optional(),
           icon: z.string().optional(),
           bannerImage: z.string().optional(),
+          process: z.string().optional(),
+          video: z.string().optional(),
           basePrice: priceValueSchema,
           pricePerUnit: priceValueSchema,
           unit: z.string().optional(),
           promotion: z.string().trim().max(255).optional(),
           priceNote: z.string().trim().max(1000).optional(),
           isPublished: z.boolean().optional(),
+          seoTitle: z.string().trim().max(255).optional(),
+          seoDescription: z.string().trim().max(500).optional(),
+          seoKeywords: z.string().trim().max(500).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
