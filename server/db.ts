@@ -2,6 +2,7 @@ import { eq, and, desc, asc, isNull, lte, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, roles, permissions, pages, sections, menus, services, cases, blogs, categories, faqs, reviews, banners, media, contacts, bookings, settings, seo, hero, footer, Hero, Footer, InsertHero, InsertFooter } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { buildMenuTree } from "./menuTree";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -266,13 +267,25 @@ export async function deleteSection(sectionId: number) {
 export async function getAllMenus() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(menus).where(eq(menus.parentId, null as any)).orderBy(asc(menus.order));
+  return db.select().from(menus).orderBy(asc(menus.order), asc(menus.id));
 }
 
 export async function getMenuChildren(parentId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(menus).where(eq(menus.parentId, parentId)).orderBy(asc(menus.order));
+}
+
+/** 僅供公開網站使用：只回傳標示為可見的選單，且不洩漏內部草稿資料。 */
+export async function getPublicMenuTree() {
+  const db = await getDb();
+  if (!db) return [];
+  const visibleMenus = await db
+    .select()
+    .from(menus)
+    .where(eq(menus.isVisible, true))
+    .orderBy(asc(menus.order), asc(menus.id));
+  return buildMenuTree(visibleMenus);
 }
 
 export async function createMenu(data: typeof menus.$inferInsert) {

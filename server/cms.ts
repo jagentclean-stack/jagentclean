@@ -49,6 +49,7 @@ export const cmsRouter = router({
     blogs: publicProcedure.query(() => db.getPublishedBlogs()),
     faqs: publicProcedure.query(() => db.getVisibleFAQs()),
     footer: publicProcedure.query(() => db.getPublishedFooter()),
+    menus: publicProcedure.query(() => db.getPublicMenuTree()),
   }),
 
   /**
@@ -632,7 +633,7 @@ export const cmsRouter = router({
           url: z.string().min(1, "URL 必填"),
           order: z.number().optional(),
           isVisible: z.boolean().default(true),
-          openInNewTab: z.boolean().default(false),
+          openNewWindow: z.boolean().default(false),
           parentId: z.number().optional().nullable(),
         })
       )
@@ -651,7 +652,7 @@ export const cmsRouter = router({
           url: z.string().optional(),
           order: z.number().optional(),
           isVisible: z.boolean().optional(),
-          openInNewTab: z.boolean().optional(),
+          openNewWindow: z.boolean().optional(),
           parentId: z.number().optional().nullable(),
         })
       )
