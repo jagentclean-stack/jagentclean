@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
-import { buildBreadcrumbSchema, buildFaqSchema, PAGE_LABELS, safeCanonical, seoSlugFromPath, SITE_NAME } from "@/lib/seo";
+import { buildBreadcrumbSchema, buildFaqSchema, PAGE_LABELS, safeCanonical, seoSlugFromPath } from "@/lib/seo";
 
 type SeoRecord = {
   title: string;
@@ -49,19 +49,22 @@ export default function SEOHead({ pathname }: { pathname: string }) {
   const slug = seoSlugFromPath(pathname);
   const { data: seo } = trpc.cms.publicContent.seo.useQuery({ slug }) as { data?: SeoRecord | null };
   const { data: faqs = [] } = trpc.cms.publicContent.faqs.useQuery(undefined, { enabled: pathname === "/faq" });
+  const { data: siteSettings } = trpc.cms.publicContent.siteSettings.useQuery();
 
   useEffect(() => {
     const origin = window.location.origin;
-    const fallbackTitle = `${PAGE_LABELS[pathname] || "頁面"}｜${SITE_NAME}`;
+    const siteName = siteSettings?.siteName?.trim() || "";
+    const fallbackTitle = siteName ? `${PAGE_LABELS[pathname] || "頁面"}｜${siteName}` : PAGE_LABELS[pathname] || "頁面";
     const title = seo?.title || fallbackTitle;
-    const description = seo?.description || "潔特務清潔提供專業、可靠的清潔服務，歡迎透過官方 LINE 進行諮詢。";
+    const description = seo?.description || siteSettings?.siteDescription || "";
     const canonical = safeCanonical(seo?.canonical, `${origin}${pathname}`);
-    const ogImage = seo?.ogImage || `${origin}/manus-storage/brand-logo_0f07bc46.png`;
+    const ogImagePath = seo?.ogImage || siteSettings?.logoUrl || "";
+    const ogImage = ogImagePath ? (/^https?:\/\//i.test(ogImagePath) ? ogImagePath : `${origin}${ogImagePath.startsWith("/") ? "" : "/"}${ogImagePath}`) : "";
     const robots = seo?.noindex || seo?.index === false ? "noindex, nofollow" : "index, follow, max-image-preview:large";
 
     document.title = title;
     setMeta('meta[name="description"]', { name: "description", content: description });
-    setMeta('meta[name="keywords"]', { name: "keywords", content: seo?.keywords || "潔特務清潔, J-Agent Cleaning, 台南清潔" });
+    setMeta('meta[name="keywords"]', { name: "keywords", content: seo?.keywords || "" });
     setMeta('meta[name="robots"]', { name: "robots", content: robots });
     setMeta('meta[property="og:title"]', { property: "og:title", content: title });
     setMeta('meta[property="og:description"]', { property: "og:description", content: description });
@@ -85,7 +88,7 @@ export default function SEOHead({ pathname }: { pathname: string }) {
     setJsonLd("cms-breadcrumb-schema", buildBreadcrumbSchema(origin, pathname));
     setJsonLd("cms-faq-schema", pathname === "/faq" ? buildFaqSchema(faqs) : null);
     setJsonLd("cms-page-schema", parseSchema(seo?.schema));
-  }, [faqs, pathname, seo]);
+  }, [faqs, pathname, seo, siteSettings]);
 
   return null;
 }

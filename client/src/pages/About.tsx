@@ -2,14 +2,18 @@ import { Link } from "wouter";
 import AnimatedSection from "@/components/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Award, Users } from "lucide-react";
+import { trpc } from "@/lib/trpc";
 
 export default function About() {
+  const { data: settings } = trpc.cms.publicContent.siteSettings.useQuery();
+  const siteName = settings?.siteName?.trim() || "";
+
   return (
     <div className="min-h-screen pt-20 bg-background">
       <div className="container mx-auto px-4 lg:px-8 py-12">
         <AnimatedSection>
           <h1 className="text-5xl font-bold text-center text-primary mb-8">
-            關於潔特務清潔
+            關於{siteName || "我們"}
           </h1>
         </AnimatedSection>
         <AnimatedSection delay={100}>
@@ -25,7 +29,7 @@ export default function About() {
                 我們的使命與願景
               </h2>
               <p className="text-lg text-foreground leading-relaxed">
-                潔特務清潔的使命是透過專業、高效、環保的清潔服務，為企業客戶創造一個潔淨、健康、舒適的工作環境。我們相信，一個優質的環境不僅能提升員工的生產力，更能彰顯企業的專業形象。
+                {siteName ? `${siteName}的使命是` : "我們的使命是"}透過專業、高效、環保的清潔服務，為企業客戶創造一個潔淨、健康、舒適的工作環境。我們相信，一個優質的環境不僅能提升員工的生產力，更能彰顯企業的專業形象。
               </p>
               <p className="text-lg text-foreground leading-relaxed">
                 我們的願景是成為業界領先的企業級清潔服務提供商，以創新技術和卓越服務，重新定義清潔標準，成為客戶最信賴的長期合作夥伴。
@@ -36,7 +40,7 @@ export default function About() {
             <div className="md:w-1/2 flex justify-center">
               <img
                 src="/manus-storage/586524_e7f6adef.png"
-                alt="潔特務清潔專業團隊代言人"
+                alt={siteName ? `${siteName}專業團隊代言人` : "專業團隊代言人"}
                 className="rounded-xl soft-shadow w-full max-w-md"
                 loading="lazy"
                 width={400}

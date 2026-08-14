@@ -1,27 +1,21 @@
 import { trpc } from "@/lib/trpc";
+import React from "react";
 import { Mail, MessageCircle, Phone } from "lucide-react";
-
-const FALLBACKS = {
-  lineUrl: "https://lin.ee/ynvoHjh",
-  facebookUrl: "https://www.facebook.com/Jagentclean",
-  phone: "06-3584567",
-  email: "jagentclean@gmail.com",
-};
 
 export default function FloatingContactMenu() {
   const { data: settings } = trpc.cms.publicContent.siteSettings.useQuery();
-  const lineUrl = settings?.lineUrl || FALLBACKS.lineUrl;
-  const facebookUrl = settings?.facebookUrl || FALLBACKS.facebookUrl;
-  const phone = settings?.companyPhone || FALLBACKS.phone;
-  const email = settings?.companyEmail || FALLBACKS.email;
-  const phoneHref = `tel:${phone.replace(/[^\d+]/g, "")}`;
-
+  const lineUrl = settings?.lineUrl?.trim();
+  const facebookUrl = settings?.facebookUrl?.trim();
+  const phone = settings?.companyPhone?.trim();
+  const email = settings?.companyEmail?.trim();
   const links = [
-    { label: "加入 LINE", href: lineUrl, icon: <img src="/manus-storage/line-logo_3ac33c37.png" alt="" className="h-6 w-6 object-contain" />, tone: "bg-[#00B900] hover:bg-[#00A000]" },
-    { label: "Facebook", href: facebookUrl, icon: <img src="/manus-storage/facebook-logo_ee508d3d.png" alt="" className="h-6 w-6 object-contain" />, tone: "bg-[#1877F2] hover:bg-[#1266d7]" },
-    { label: phone, href: phoneHref, icon: <Phone className="h-5 w-5" aria-hidden="true" />, tone: "bg-primary hover:bg-primary/90" },
-    { label: "電子郵件", href: `mailto:${email}`, icon: <Mail className="h-5 w-5" aria-hidden="true" />, tone: "bg-slate-600 hover:bg-slate-700" },
-  ];
+    lineUrl ? { label: "加入 LINE", href: lineUrl, icon: <img src="/manus-storage/line-logo_3ac33c37.png" alt="" className="h-6 w-6 object-contain" />, tone: "bg-[#00B900] hover:bg-[#00A000]" } : null,
+    facebookUrl ? { label: "Facebook", href: facebookUrl, icon: <img src="/manus-storage/facebook-logo_ee508d3d.png" alt="" className="h-6 w-6 object-contain" />, tone: "bg-[#1877F2] hover:bg-[#1266d7]" } : null,
+    phone ? { label: phone, href: `tel:${phone.replace(/[^\d+]/g, "")}`, icon: <Phone className="h-5 w-5" aria-hidden="true" />, tone: "bg-primary hover:bg-primary/90" } : null,
+    email ? { label: "電子郵件", href: `mailto:${email}`, icon: <Mail className="h-5 w-5" aria-hidden="true" />, tone: "bg-slate-600 hover:bg-slate-700" } : null,
+  ].filter((link): link is NonNullable<typeof link> => link !== null);
+
+  if (!links.length) return null;
 
   return (
     <nav aria-label="快速聯絡方式" className="fixed bottom-6 right-4 z-40 flex flex-col items-end gap-3 sm:right-6">

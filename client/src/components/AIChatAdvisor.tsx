@@ -1,8 +1,9 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface Message {
   id: string;
@@ -11,16 +12,25 @@ interface Message {
 }
 
 export default function AIChatAdvisor() {
+  const { data: settings } = trpc.cms.publicContent.siteSettings.useQuery();
+  const siteName = settings?.siteName?.trim() || "";
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "1",
+      id: "welcome",
       role: "assistant",
-      content: "您好！我是潔特務清潔 AI 顧問。我可以幫您：\n• 推薦適合的清潔服務\n• 提供價格估算\n• 回答清潔相關問題\n\n請告訴我您的需求！",
+      content: "您好！我是 AI 清潔顧問。我可以幫您：\n• 推薦適合的清潔服務\n• 提供價格估算\n• 回答清潔相關問題\n\n請告訴我您的需求！",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!siteName) return;
+    setMessages((current) => current.length === 1 && current[0]?.id === "welcome"
+      ? [{ ...current[0], content: `您好！我是 ${siteName} AI 清潔顧問。我可以幫您：\n• 推薦適合的清潔服務\n• 提供價格估算\n• 回答清潔相關問題\n\n請告訴我您的需求！` }]
+      : current);
+  }, [siteName]);
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import React from "react";
 import { Link } from "wouter";
 import ServiceCard from "@/components/ServiceCard";
 import ProcessStep from "@/components/ProcessStep";
@@ -12,10 +13,13 @@ import { trpc } from "@/lib/trpc";
 
 export default function Home() {
   const { data: homepageContent } = trpc.cms.publicContent.homepage.useQuery();
+  const { data: settings } = trpc.cms.publicContent.siteSettings.useQuery();
   const hero = homepageContent?.hero;
   const services = homepageContent?.services ?? [];
   const reviews = homepageContent?.reviews ?? [];
   const faqs = homepageContent?.faqs ?? [];
+  const siteName = settings?.siteName?.trim() || "";
+  const lineUrl = settings?.lineUrl?.trim() || "";
   const serviceIcons = [Briefcase, ShieldCheck, Zap];
 
   return (
@@ -49,7 +53,7 @@ export default function Home() {
                   fontWeight: '700'
                 }}
               >
-                {hero?.title || <>潔特務清潔：專業、高效、<br />值得信賴的企業級清潔服務</>}
+                {hero?.title || <>{siteName ? `${siteName}：` : ""}專業、高效、<br />值得信賴的企業級清潔服務</>}
               </h1>
             </AnimatedSection>
 
@@ -92,7 +96,7 @@ export default function Home() {
                     {hero?.ctaText || "📅 立即預約免費諮詢"}
                   </Button>
                 </a>
-                <a href="https://lin.ee/ynvoHjh" target="_blank" rel="noopener noreferrer">
+                {lineUrl && <a href={lineUrl} target="_blank" rel="noopener noreferrer">
                   <Button 
                     variant="outline"
                     className="soft-shadow hover:scale-105 transition-transform duration-300 border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-full"
@@ -109,7 +113,7 @@ export default function Home() {
                   >
                     📋 獲取免費報價
                   </Button>
-                </a>
+                </a>}
                 <a href="/services">
                   <Button 
                     variant="outline"
@@ -141,7 +145,7 @@ export default function Home() {
             <div className="flex justify-center">
               <img
                 src="/manus-storage/586524_e7f6adef.png"
-                alt="潔特務清潔品牌代言人"
+                alt={siteName ? `${siteName}品牌代言人` : "品牌代言人"}
                 className="rounded-xl soft-shadow"
                 style={{ maxWidth: '300px', height: 'auto' }}
                 loading="lazy"
@@ -212,10 +216,10 @@ export default function Home() {
             <AnimatedSection>
               <div className="md:w-1/2 text-left space-y-6">
                 <h2 className="text-4xl font-bold text-primary mb-6">
-                  關於潔特務清潔
+                  關於{siteName || "我們"}
                 </h2>
                 <p className="text-lg text-gray-800 leading-relaxed">
-                  潔特務清潔致力於提供卓越的企業級清潔服務，我們深知一個潔淨、衛生的工作環境對於企業形象和員工生產力的重要性。憑藉多年的行業經驗和專業知識，我們為各行各業的客戶提供量身定制的清潔解決方案。
+                  {siteName ? `${siteName}致力於提供卓越的企業級清潔服務，` : "我們致力於提供卓越的企業級清潔服務，"}我們深知一個潔淨、衛生的工作環境對於企業形象和員工生產力的重要性。憑藉多年的行業經驗和專業知識，我們為各行各業的客戶提供量身定制的清潔解決方案。
                 </p>
                 <p className="text-lg text-gray-800 leading-relaxed">
                   我們的團隊由一群訓練有素、經驗豐富的「清潔特務」組成，他們不僅掌握最先進的清潔技術，更秉持著嚴謹細緻的服務態度。
@@ -241,7 +245,7 @@ export default function Home() {
               <div className="md:w-1/2 flex justify-center items-center">
                 <img
                   src="/manus-storage/jagent-cleaning-service_e8cbb29e.webp"
-                  alt="About J-Agent Cleaning"
+                  alt={siteName ? `About ${siteName}` : "專業清潔服務"}
                   className="rounded-xl soft-shadow w-full h-auto"
                   loading="lazy"
                   width={600}
@@ -301,7 +305,7 @@ export default function Home() {
                 <AnimatedSection key={review.id} delay={index * 100}>
                   <TestimonialCard
                     name={review.name ?? ""}
-                    title="潔特務清潔客戶"
+                    title={siteName ? `${siteName} 客戶` : "客戶"}
                     quote={review.content ?? ""}
                     avatarSrc={review.avatar || undefined}
                   />

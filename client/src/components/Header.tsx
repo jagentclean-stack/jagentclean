@@ -32,8 +32,8 @@ export default function Header() {
   const { data: menus = [] } = trpc.cms.publicContent.menus.useQuery();
   const { data: siteSettings } = trpc.cms.publicContent.siteSettings.useQuery();
   const navigation = menus as NavigationItem[];
-  const siteName = siteSettings?.siteName || "J-Agent Cleaning";
-  const logoUrl = siteSettings?.logoUrl || "/manus-storage/1785467843786_6a67b85c.jpg";
+  const siteName = siteSettings?.siteName?.trim() || "";
+  const logoUrl = siteSettings?.logoUrl?.trim() || "";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -53,9 +53,9 @@ export default function Header() {
   return (
     <header className={`fixed z-50 w-full transition-all duration-300 ${scrolled ? "bg-white/95 shadow-md backdrop-blur-md" : "bg-white"}`} style={{ height: "88px" }}>
       <div className="container flex h-full items-center justify-between px-6 lg:px-8" style={{ maxWidth: "1400px" }}>
-        <Link href="/" className="flex shrink-0 items-center gap-3" aria-label="回到潔特務清潔首頁">
-          <img src={logoUrl} alt={`${siteName} Logo`} className="h-12 w-auto" />
-          <div className="hidden flex-col sm:flex"><span className="text-sm font-semibold text-primary">{siteName}</span><span className="text-xs text-gray-600">潔特務清潔</span></div>
+        <Link href="/" className="flex shrink-0 items-center gap-3" aria-label={siteName ? `回到${siteName}首頁` : "回到首頁"}>
+          {logoUrl && <img src={logoUrl} alt={siteName ? `${siteName} Logo` : "網站 Logo"} className="h-12 w-auto" />}
+          {siteName && <div className="hidden flex-col sm:flex"><span className="text-sm font-semibold text-primary">{siteName}</span></div>}
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center justify-center gap-7 px-8 lg:flex xl:gap-10" aria-label="主要導覽">

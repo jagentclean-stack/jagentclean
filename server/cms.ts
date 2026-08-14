@@ -99,7 +99,7 @@ export const cmsRouter = router({
       ]));
       const values = Object.fromEntries(settings.map((setting) => [setting.key, setting.value || ""]));
       return {
-        siteName: values.site_name || "J-Agent Cleaning",
+        siteName: values.site_name || "",
         siteDescription: values.site_description || "",
         logoUrl: values.logo_url || null,
         contactImageUrl: values.contact_image_url || null,

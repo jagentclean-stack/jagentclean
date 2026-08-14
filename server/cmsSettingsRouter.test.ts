@@ -47,4 +47,17 @@ describe("CMS settings router 白名單隔離", () => {
     expect(settings).not.toHaveProperty("smtp_password");
     expect(settings).not.toHaveProperty("openai_api_key");
   });
+
+  it("公開網站設定缺值時維持空白，不回退至硬編碼品牌或聯繫資料", async () => {
+    dbMock.getSettingsByKeys.mockResolvedValueOnce([]);
+    await expect(caller.publicContent.siteSettings()).resolves.toMatchObject({
+      siteName: "",
+      siteDescription: "",
+      logoUrl: null,
+      companyPhone: "",
+      companyEmail: "",
+      lineUrl: "",
+      companyAddress: "",
+    });
+  });
 });

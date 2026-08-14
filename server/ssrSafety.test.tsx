@@ -2,7 +2,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import FloatingButtons from "../client/src/components/FloatingButtons";
+import FloatingContactMenu from "../client/src/components/FloatingContactMenu";
 import Header from "../client/src/components/Header";
 import Footer from "../client/src/components/Footer";
 import SEOHead from "../client/src/components/SEOHead";
@@ -27,10 +27,10 @@ vi.mock("wouter", () => ({
 }));
 
 describe("公開元件 SSR 安全性", () => {
-  it("在沒有 window、document 與 localStorage 的 Node 環境中可渲染浮動操作按鈕", () => {
+  it("在沒有 window、document 與 localStorage 的 Node 環境中可渲染實際掛載的浮動聯繫選單", () => {
     expect(typeof globalThis.window).toBe("undefined");
     expect(typeof globalThis.document).toBe("undefined");
-    expect(() => renderToStaticMarkup(<FloatingButtons />)).not.toThrow();
+    expect(() => renderToStaticMarkup(<FloatingContactMenu />)).not.toThrow();
   });
 
   it("在沒有 window、document 與 localStorage 的 Node 環境中可渲染公開頁殼層", () => {

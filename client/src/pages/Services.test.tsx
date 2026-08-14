@@ -15,10 +15,18 @@ const state = vi.hoisted(() => ({
   data: [] as Array<Record<string, unknown>>,
   isLoading: false,
   isError: false,
+  settings: { lineUrl: "https://example.test/line" } as { lineUrl?: string | null },
 }));
 
 vi.mock("@/lib/trpc", () => ({
-  trpc: { cms: { publicContent: { services: { useQuery: () => state } } } },
+  trpc: {
+    cms: {
+      publicContent: {
+        services: { useQuery: () => ({ data: state.data, isLoading: state.isLoading, isError: state.isError }) },
+        siteSettings: { useQuery: () => ({ data: state.settings, isLoading: false }) },
+      },
+    },
+  },
 }));
 
 import Services from "./Services";
@@ -28,6 +36,7 @@ afterEach(() => {
   state.data = [];
   state.isLoading = false;
   state.isError = false;
+  state.settings = { lineUrl: "https://example.test/line" };
 });
 
 describe("公開服務價格展示", () => {
