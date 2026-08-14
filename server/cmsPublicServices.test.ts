@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
 const dbMock = vi.hoisted(() => ({
-  getPublishedServices: vi.fn(async () => [
-    { id: 1, title: "公開服務", isPublished: true, minPrice: "1200", pricePerUnit: "300" },
-    { id: 2, title: "未發布服務", isPublished: false, minPrice: "9999", pricePerUnit: "999" },
+  getPublishedServicesWithFAQs: vi.fn(async () => [
+    { id: 1, title: "公開服務", isPublished: true, minPrice: "1200", pricePerUnit: "300", faqs: [{ id: 11, question: "公開 FAQ", answer: "公開答案", isVisible: true }] },
+    { id: 2, title: "未發布服務", isPublished: false, minPrice: "9999", pricePerUnit: "999", faqs: [{ id: 12, question: "不應公開", answer: "草稿答案", isVisible: true }] },
   ]),
 }));
 
@@ -22,7 +22,7 @@ describe("公開服務與價格隔離", () => {
   it("public services API 不輸出未發布服務的價格資料", async () => {
     const caller = cmsRouter.createCaller({ req: {} as never, res: {} as never, user: null });
     await expect(caller.publicContent.services()).resolves.toEqual([
-      { id: 1, title: "公開服務", isPublished: true, minPrice: "1200", pricePerUnit: "300" },
+      { id: 1, title: "公開服務", isPublished: true, minPrice: "1200", pricePerUnit: "300", faqs: [{ id: 11, question: "公開 FAQ", answer: "公開答案", isVisible: true }] },
     ]);
   });
 });

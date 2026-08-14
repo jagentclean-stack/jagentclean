@@ -44,7 +44,21 @@ const cmsUserRoleSchema = z.enum(["super_admin", "admin", "manager", "customer_s
 export function onlyPublishedServices<T extends { isPublished: boolean | null }>(records: T[]) {
   return records.filter((service) => service.isPublished === true);
 }
+
+export function onlyPublishedServicesWithVisibleFAQs<
+  T extends { isPublished: boolean | null; faqs?: Array<{ isVisible?: boolean | null }> },
+>(records: T[]) {
+  return onlyPublishedServices(records).map((service) => ({
+    ...service,
+    faqs: (service.faqs ?? []).filter((faq) => faq.isVisible === true),
+  }));
+}
 const isHighestAdmin = (email: string | null | undefined) => Boolean(email && ADMIN_EMAILS.includes(email));
+
+async function assertValidFAQServiceLink(serviceId: number | null | undefined) {
+  if (serviceId === undefined || serviceId === null) return;
+  if (!(await db.getServiceById(serviceId))) throw new Error("指定的服務不存在");
+}
 
 /**
  * CMS Dashboard Router
@@ -70,7 +84,7 @@ export const cmsRouter = router({
         footer: footerContent,
       };
     }),
-    services: publicProcedure.query(async () => onlyPublishedServices(await db.getPublishedServices())),
+    services: publicProcedure.query(async () => onlyPublishedServicesWithVisibleFAQs(await db.getPublishedServicesWithFAQs())),
     cases: publicProcedure.query(() => db.getPublishedCases()),
     blogs: publicProcedure.query(() => db.getPublishedBlogs()),
     faqs: publicProcedure.query(() => db.getVisibleFAQs()),
@@ -211,6 +225,7 @@ export const cmsRouter = router({
           icon: z.string().optional(),
           bannerImage: z.string().optional(),
           process: z.string().optional(),
+          faq: z.string().trim().max(5000).optional(),
           video: z.string().optional(),
           basePrice: priceValueSchema,
           pricePerUnit: priceValueSchema,
@@ -240,6 +255,7 @@ export const cmsRouter = router({
           icon: z.string().optional(),
           bannerImage: z.string().optional(),
           process: z.string().optional(),
+          faq: z.string().trim().max(5000).optional(),
           video: z.string().optional(),
           basePrice: priceValueSchema,
           pricePerUnit: priceValueSchema,
@@ -623,7 +639,7 @@ export const cmsRouter = router({
    */
   faqs: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "editor")) {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
         throw new Error("Unauthorized");
       }
       return db.getAllFAQs();
@@ -635,14 +651,16 @@ export const cmsRouter = router({
           question: z.string(),
           answer: z.string(),
           category: z.string().optional(),
+          serviceId: z.number().int().positive().nullable().optional(),
           order: z.number().default(0),
           isVisible: z.boolean().default(true),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
           throw new Error("Unauthorized");
         }
+        await assertValidFAQServiceLink(input.serviceId);
         return db.createFAQ(input as any);
       }),
 
@@ -653,22 +671,24 @@ export const cmsRouter = router({
           question: z.string().optional(),
           answer: z.string().optional(),
           category: z.string().optional(),
+          serviceId: z.number().int().positive().nullable().optional(),
           order: z.number().optional(),
           isVisible: z.boolean().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
+        await assertValidFAQServiceLink(data.serviceId);
         return db.updateFAQ(id, data as any);
       }),
 
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) {
           throw new Error("Unauthorized");
         }
         return db.deleteFAQ(input.id);

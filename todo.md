@@ -32,7 +32,13 @@
 - [x] 為 /cms/prices 補上頁面層角色保護與基礎價格、每單位價格、優惠欄位的互動測試
 - [x] 修正 CMSServices 缺少 Hook 匯入、空白編輯按鈕與 admin-only 前端判斷
 - [x] 將服務流程、圖片、SEO、發佈狀態與完整價格欄位納入 CMSServices 的新增／編輯表單與測試
-- [ ] 為服務建立可管理的 FAQ 關聯與公開頁呈現，符合服務管理需求中的服務專屬 FAQ
+- [x] 為服務建立可管理的 FAQ 關聯與公開頁呈現，符合服務管理需求中的服務專屬 FAQ
+- [x] 為服務建立真正的 FAQ 關聯模型（例如 service_faqs 關聯表或 FAQ 加上 serviceId），支援多筆問題／答案、排序與顯示控制
+- [x] 在 CMS 服務管理或 FAQ 管理頁加入服務專屬 FAQ 的新增、編輯、刪除與排序介面，避免僅用單一自由文字欄位
+- [x] 為公開服務頁加入結構化服務 FAQ 呈現與自動化測試，驗證多筆 FAQ、空狀態與未發布內容不外洩
+- [x] 新增 CMSFAQ 頁面互動測試，覆蓋服務選擇、排序、顯示開關、編輯與刪除確認流程
+- [x] 新增 FAQ API 關聯測試，覆蓋 serviceId 有效性、未發布服務的公開隔離及 FAQ 顯示開關
+- [x] 為 CMSFAQs 新增既有 FAQ 編輯互動測試，驗證 question、answer、serviceId、order、isVisible 更新時呼叫 update mutation 並具備成功／失敗回饋
 
 ## 預約與聯繫流程可靠性
 - [x] 預約狀態輸入採用共用且受限制的列舉驗證

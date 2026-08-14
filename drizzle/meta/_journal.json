@@ -43,6 +43,13 @@
       "when": 1786698563767,
       "tag": "0005_even_blob",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1786711044354,
+      "tag": "0006_freezing_sentry",
+      "breakpoints": true
     }
   ]
 }

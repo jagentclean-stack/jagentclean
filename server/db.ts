@@ -55,6 +55,15 @@ export async function getPublishedServices() {
   return db.select().from(services).where(eq(services.isPublished, true)).orderBy(asc(services.order));
 }
 
+/** 公開服務頁資料：只附帶可見且明確關聯至該服務的 FAQ。 */
+export async function getPublishedServicesWithFAQs() {
+  const [publishedServices, visibleFaqs] = await Promise.all([getPublishedServices(), getVisibleFAQs()]);
+  return publishedServices.map((service) => ({
+    ...service,
+    faqs: visibleFaqs.filter((faq) => faq.serviceId === service.id),
+  }));
+}
+
 export async function getVisibleFAQs() {
   const db = await getDb();
   if (!db) return [];
@@ -355,6 +364,13 @@ export async function getServiceBySlug(slug: string) {
   if (!db) return undefined;
   const result = await db.select().from(services).where(eq(services.slug, slug)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getServiceById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(services).where(eq(services.id, id)).limit(1);
+  return result[0];
 }
 
 export async function createService(data: typeof services.$inferInsert) {

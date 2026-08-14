@@ -31,3 +31,19 @@ The CMS price-management page now has direct JSDOM coverage for access control a
 ## 2026-08-14 — Service management form
 
 `/cms/services` was rebuilt around one controlled editing dialog, preventing duplicate forms from mounting when an administrator edits a service. The form now manages the description, cleaning process, icon and banner URLs, video URL, pricing, promotion, price note, SEO metadata, and publish state. Page tests cover access denial and a complete edit submission; the full suite passes 25 files / 57 tests and production build succeeds. Service-specific FAQ associations remain a separately scoped enhancement.
+
+## 2026-08-14 — Service FAQ text support
+
+The existing `services.faq` text field is now editable within `/cms/services` and constrained by the server API to 5,000 characters. A published service exposes this text in an accessible native disclosure panel on `/services`, preserving deliberate line breaks. CMS submission and public rendering are covered by the current 25-file / 58-test suite, followed by a successful production build. This is an interim text-based feature; it is not yet a relational, multi-question FAQ workflow.
+
+## 2026-08-14 — Published services visual check
+
+Two full-page captures of `/services` were reviewed after the FAQ relation changes. The current published response contains eight service cards in a balanced three-column desktop grid, with the final row naturally left-aligned. No runtime error, price artifact, or FAQ artifact is visible while no related FAQ records have yet been assigned. Header, LINE CTA, contact CTA, and footer remain visible and aligned.
+
+## 2026-08-14 — Relational service FAQ safety
+
+Service-specific FAQs now use the nullable `faqs.serviceId` foreign-key relationship rather than a single free-text service field. CMS FAQ management supports linking a FAQ to one service, setting a numeric order, toggling public visibility, editing, and admin-only deletion. Public service output applies defense in depth: it filters out unpublished services and then removes hidden FAQs even if a lower database query regresses. The complete test suite passes 27 files / 63 tests; the production build succeeds.
+
+## 2026-08-14 — FAQ edit feedback coverage
+
+The CMS FAQ editor now gives an explicit success notice after creating or updating a record, while failed saves keep the dialog open and render the returned error. Its page tests cover denied access, service-linked creation, sort and visibility values, deletion confirmation, a complete existing-FAQ update, success feedback, and failure recovery. The full suite passes 27 files / 65 tests and the production build completes successfully.

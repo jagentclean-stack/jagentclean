@@ -236,6 +236,7 @@ export const faqs = mysqlTable("faqs", {
   question: varchar("question", { length: 500 }).notNull(),
   answer: longtext("answer"),
   categoryId: int("categoryId"),
+  serviceId: int("serviceId"),
   order: int("order").default(0),
   isVisible: boolean("isVisible").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
