@@ -51,3 +51,7 @@ The CMS FAQ editor now gives an explicit success notice after creating or updati
 ## 2026-08-14 — Media search and batch upload
 
 The media center now imports its React hooks safely at runtime, supports keyword search across filename, category, and alternative text, and accepts a validated selection of multiple files. Files are uploaded sequentially so each upload receives the existing server-side file signature and size checks; the panel resets only after the final file succeeds. Tests cover denied access, search filtering, and two-file upload sequencing. The complete suite passes 28 files / 68 tests and the production build succeeds.
+
+## 2026-08-14 — Media metadata and tags
+
+Media records can now be renamed and have their category, alternative text, and tags updated through a protected editor. Tag input is normalized into at most twenty unique values, tag badges are visible in the library, and search includes tags in addition to filename, category, and alternative text. Tests cover a complete metadata update; the full suite passes 28 files / 69 tests and production build succeeds.

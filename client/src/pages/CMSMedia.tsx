@@ -4,10 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Plus, Trash2, Copy, Image as ImageIcon, Video } from "lucide-react";
+import { Loader2, Plus, Trash2, Copy, Image as ImageIcon, Video, Pencil } from "lucide-react";
 
 const ALLOWED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm"];
 const MAX_MEDIA_BYTES = 20 * 1024 * 1024;
+
+function splitTags(value: string) {
+  return Array.from(new Set(value.split(",").map((tag) => tag.trim()).filter(Boolean))).slice(0, 20);
+}
+
+function readTags(value: unknown) {
+  return Array.isArray(value) ? value.filter((tag): tag is string => typeof tag === "string") : [];
+}
 
 export default function CMSMedia() {
   const { user, isAuthenticated } = useAuth();
@@ -17,8 +25,16 @@ export default function CMSMedia() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadCategory, setUploadCategory] = useState("");
   const [uploadAlt, setUploadAlt] = useState("");
+  const [uploadTags, setUploadTags] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingMedia, setEditingMedia] = useState<{ id: number; filename: string; category?: string | null; alt?: string | null; tags?: unknown } | null>(null);
+  const [editFilename, setEditFilename] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editAlt, setEditAlt] = useState("");
+  const [editTags, setEditTags] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: media, isLoading, refetch } = trpc.cms.media.list.useQuery(undefined, {
@@ -32,11 +48,14 @@ export default function CMSMedia() {
   const uploadMutation = trpc.cms.media.upload.useMutation({
     onError: (error) => setUploadError(error.message || "上傳失敗，請稍後再試。"),
   });
+  const updateMutation = trpc.cms.media.update.useMutation({
+    onError: (error) => setEditError(error.message || "儲存媒體資料失敗，請稍後再試。"),
+  });
 
   const normalizedSearch = searchQuery.trim().toLocaleLowerCase("zh-TW");
   const filteredMedia = media?.filter((item) => {
     const matchesCategory = category === "all" || item.category === category;
-    const searchContent = [item.filename, item.category, item.alt].filter(Boolean).join(" ").toLocaleLowerCase("zh-TW");
+    const searchContent = [item.filename, item.category, item.alt, ...readTags(item.tags)].filter(Boolean).join(" ").toLocaleLowerCase("zh-TW");
     return matchesCategory && (!normalizedSearch || searchContent.includes(normalizedSearch));
   });
   const categories = Array.from(new Set(media?.map((item) => item.category).filter(Boolean))) as string[];
@@ -88,11 +107,13 @@ export default function CMSMedia() {
           mimeType: selectedFile.type,
           category: uploadCategory.trim() || undefined,
           alt: uploadAlt.trim() || undefined,
+          tags: splitTags(uploadTags),
         });
       }
       setSelectedFiles([]);
       setUploadCategory("");
       setUploadAlt("");
+      setUploadTags("");
       setIsUploadOpen(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       await refetch();
@@ -104,6 +125,35 @@ export default function CMSMedia() {
   const closeUploadPanel = () => {
     setIsUploadOpen(false);
     setUploadError("");
+  };
+
+  const beginEdit = (item: { id: number; filename: string; category?: string | null; alt?: string | null; tags?: unknown }) => {
+    setEditingMedia(item);
+    setEditFilename(item.filename);
+    setEditCategory(item.category || "");
+    setEditAlt(item.alt || "");
+    setEditTags(readTags(item.tags).join(", "));
+    setEditError("");
+    setEditSuccess("");
+  };
+
+  const saveMetadata = async () => {
+    if (!editingMedia) return;
+    try {
+      setEditError("");
+      setEditSuccess("");
+      await updateMutation.mutateAsync({
+        id: editingMedia.id,
+        filename: editFilename.trim(),
+        category: editCategory.trim() || null,
+        alt: editAlt.trim() || null,
+        tags: splitTags(editTags),
+      });
+      setEditSuccess("媒體資料已儲存。");
+      await refetch();
+    } catch (error) {
+      setEditError(error instanceof Error ? error.message : "儲存媒體資料失敗，請稍後再試。");
+    }
   };
 
   if (!isAuthenticated || !["admin", "editor"].includes(user?.role || "")) {
@@ -143,6 +193,10 @@ export default function CMSMedia() {
                 <label className="text-sm font-medium text-gray-800" htmlFor="media-alt">替代文字</label>
                 <Input id="media-alt" value={uploadAlt} onChange={(event) => setUploadAlt(event.target.value)} placeholder="說明圖片內容，提升無障礙與 SEO" disabled={uploadMutation.isPending} />
               </div>
+              <div className="flex-1 space-y-2">
+                <label className="text-sm font-medium text-gray-800" htmlFor="media-tags">標籤</label>
+                <Input id="media-tags" value={uploadTags} onChange={(event) => setUploadTags(event.target.value)} placeholder="以逗號分隔，例如：案例, 廚房" disabled={uploadMutation.isPending} />
+              </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={closeUploadPanel} disabled={uploadMutation.isPending}>取消</Button>
                 <Button onClick={handleUpload} disabled={!selectedFiles.length || uploadMutation.isPending}>
@@ -153,6 +207,26 @@ export default function CMSMedia() {
             </div>
             {selectedFiles.length > 0 && <p className="mt-4 text-sm text-gray-600">已選取 {selectedFiles.length} 個檔案：{selectedFiles.map((file) => file.name).join("、")}</p>}
             {uploadError && <p role="alert" className="mt-4 text-sm font-medium text-red-600">{uploadError}</p>}
+          </Card>
+        </div>
+      )}
+
+      {editingMedia && (
+        <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+          <Card role="dialog" aria-label="編輯媒體資料" className="border-blue-100 p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between gap-4">
+              <div><h2 className="font-semibold text-gray-900">編輯媒體資料</h2><p className="text-sm text-gray-500">更新檔名、分類、替代文字與標籤，不會更動原始檔案網址。</p></div>
+              <Button variant="outline" onClick={() => setEditingMedia(null)} disabled={updateMutation.isPending}>關閉</Button>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2"><label htmlFor="edit-media-filename" className="text-sm font-medium text-gray-800">媒體名稱</label><Input id="edit-media-filename" value={editFilename} onChange={(event) => setEditFilename(event.target.value)} disabled={updateMutation.isPending} /></div>
+              <div className="space-y-2"><label htmlFor="edit-media-category" className="text-sm font-medium text-gray-800">媒體分類</label><Input id="edit-media-category" value={editCategory} onChange={(event) => setEditCategory(event.target.value)} disabled={updateMutation.isPending} /></div>
+              <div className="space-y-2"><label htmlFor="edit-media-alt" className="text-sm font-medium text-gray-800">替代文字</label><Input id="edit-media-alt" value={editAlt} onChange={(event) => setEditAlt(event.target.value)} disabled={updateMutation.isPending} /></div>
+              <div className="space-y-2"><label htmlFor="edit-media-tags" className="text-sm font-medium text-gray-800">標籤</label><Input id="edit-media-tags" value={editTags} onChange={(event) => setEditTags(event.target.value)} placeholder="以逗號分隔" disabled={updateMutation.isPending} /></div>
+            </div>
+            {editError && <p role="alert" className="mt-4 text-sm font-medium text-red-600">{editError}</p>}
+            {editSuccess && <p role="status" className="mt-4 text-sm font-medium text-emerald-700">{editSuccess}</p>}
+            <div className="mt-5 flex justify-end"><Button onClick={saveMetadata} disabled={!editFilename.trim() || updateMutation.isPending}>{updateMutation.isPending ? "儲存中" : "儲存中繼資料"}</Button></div>
           </Card>
         </div>
       )}
@@ -187,8 +261,10 @@ export default function CMSMedia() {
                   <h3 className="truncate font-medium text-gray-900">{item.filename}</h3>
                   {item.category && <p className="mt-1 text-xs text-gray-500">{item.category}</p>}
                   {item.alt && <p className="mt-2 line-clamp-2 text-xs text-gray-600">{item.alt}</p>}
+                  {readTags(item.tags).length > 0 && <div className="mt-2 flex flex-wrap gap-1">{readTags(item.tags).map((tag) => <span key={tag} className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">#{tag}</span>)}</div>}
                   <div className="mt-4 flex gap-2">
                     <Button size="sm" variant="outline" className="flex-1" onClick={() => handleCopyUrl(item.url, item.id)}><Copy className="mr-1 h-4 w-4" />{copiedId === item.id ? "已複製" : "複製"}</Button>
+                    <Button size="sm" variant="outline" aria-label={`編輯 ${item.filename}`} onClick={() => beginEdit(item)}><Pencil className="h-4 w-4" /></Button>
                     <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => deleteMutation.mutate({ id: item.id })} disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>

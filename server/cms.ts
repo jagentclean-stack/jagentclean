@@ -448,6 +448,24 @@ export const cmsRouter = router({
         return { url, filename, type: uploaded.type, mimeType: uploaded.mimeType, size: uploaded.bytes.length };
       }),
 
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number().int().positive(),
+          filename: z.string().trim().min(1).max(255).optional(),
+          category: z.string().trim().max(255).nullable().optional(),
+          alt: z.string().trim().max(500).nullable().optional(),
+          tags: z.array(z.string().trim().min(1).max(100)).max(20).nullable().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateMedia(id, data);
+      }),
+
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
