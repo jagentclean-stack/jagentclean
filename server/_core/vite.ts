@@ -12,6 +12,10 @@ function requestOrigin(req: { protocol?: string; get?: (name: string) => string 
   return host ? `${req.protocol || "https"}://${host}` : "https://jagentclean-lnbtuo7t.manus.space";
 }
 
+export function isHtmlNavigationRequest(req: { headers?: { accept?: string | undefined } }) {
+  return (req.headers?.accept || "").includes("text/html");
+}
+
 async function renderSeoTemplate(template: string, requestUrl: string, origin: string) {
   const seo = await getSeoDocument(requestUrl, origin);
   return template.replace("<!--ssr-head-->", seo.head).replace("<!--ssr-content-->", seo.content);
@@ -31,8 +35,12 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
   app.use("*", async (req, res, next) => {
+    if (!isHtmlNavigationRequest(req)) {
+      next();
+      return;
+    }
+
     const url = req.originalUrl;
 
     try {
@@ -58,6 +66,7 @@ export async function setupVite(app: Express, server: Server) {
       next(e);
     }
   });
+  app.use(vite.middlewares);
 }
 
 export function serveStatic(app: Express) {
@@ -71,7 +80,10 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Do not let Express serve index.html directly. Public navigations must fall
+  // through to the SEO renderer below so canonical tags and JSON-LD are present
+  // in the initial response, while static assets remain cacheable as usual.
+  app.use(express.static(distPath, { index: false }));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", async (req, res, next) => {

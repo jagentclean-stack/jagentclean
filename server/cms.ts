@@ -61,6 +61,12 @@ async function assertValidFAQServiceLink(serviceId: number | null | undefined) {
   if (!(await db.getServiceById(serviceId))) throw new Error("指定的服務不存在");
 }
 
+async function assertValidFAQCategoryLink(categoryId: number | null | undefined) {
+  if (categoryId === undefined || categoryId === null) return;
+  const category = await db.getCategoryById(categoryId);
+  if (!category || category.type !== "faq") throw new Error("指定的 FAQ 分類不存在");
+}
+
 /**
  * CMS Dashboard Router
  * 處理所有後台管理功能
@@ -719,12 +725,49 @@ export const cmsRouter = router({
   /** 可供內容管理表單使用的分類清單。 */
   categories: router({
     list: protectedProcedure
-      .input(z.object({ type: z.enum(["blog", "case"]).optional() }).optional())
+      .input(z.object({ type: z.enum(["blog", "case", "faq"]).optional() }).optional())
       .query(async ({ input, ctx }) => {
         if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
           throw new Error("Unauthorized");
         }
         return input?.type ? db.getCategoriesByType(input.type) : db.getAllCategories();
+      }),
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string().trim().min(1, "分類名稱必填").max(255),
+        slug: z.string().trim().min(1, "分類 Slug 必填").max(255),
+        description: z.string().trim().max(2_000).nullable().optional(),
+        type: z.enum(["blog", "case", "faq"]),
+        order: z.number().int().min(0).max(100_000).default(0),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+          throw new Error("Unauthorized");
+        }
+        return db.createCategory(input as any);
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        name: z.string().trim().min(1).max(255).optional(),
+        slug: z.string().trim().min(1).max(255).optional(),
+        description: z.string().trim().max(2_000).nullable().optional(),
+        order: z.number().int().min(0).max(100_000).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+          throw new Error("Unauthorized");
+        }
+        const { id, ...data } = input;
+        return db.updateCategory(id, data as any);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) {
+          throw new Error("Unauthorized");
+        }
+        return db.deleteCategory(input.id);
       }),
   }),
 
@@ -744,7 +787,7 @@ export const cmsRouter = router({
         z.object({
           question: z.string(),
           answer: z.string(),
-          category: z.string().optional(),
+          categoryId: z.number().int().positive().nullable().optional(),
           serviceId: z.number().int().positive().nullable().optional(),
           order: z.number().default(0),
           isVisible: z.boolean().default(true),
@@ -755,6 +798,7 @@ export const cmsRouter = router({
           throw new Error("Unauthorized");
         }
         await assertValidFAQServiceLink(input.serviceId);
+        await assertValidFAQCategoryLink(input.categoryId);
         return db.createFAQ(input as any);
       }),
 
@@ -764,7 +808,7 @@ export const cmsRouter = router({
           id: z.number(),
           question: z.string().optional(),
           answer: z.string().optional(),
-          category: z.string().optional(),
+          categoryId: z.number().int().positive().nullable().optional(),
           serviceId: z.number().int().positive().nullable().optional(),
           order: z.number().optional(),
           isVisible: z.boolean().optional(),
@@ -776,6 +820,7 @@ export const cmsRouter = router({
         }
         const { id, ...data } = input;
         await assertValidFAQServiceLink(data.serviceId);
+        await assertValidFAQCategoryLink(data.categoryId);
         return db.updateFAQ(id, data as any);
       }),
 

@@ -50,6 +50,13 @@
       "when": 1786711044354,
       "tag": "0006_freezing_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1786717178437,
+      "tag": "0007_warm_shaman",
+      "breakpoints": true
     }
   ]
 }

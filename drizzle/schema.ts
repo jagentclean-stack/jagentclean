@@ -219,7 +219,7 @@ export const categories = mysqlTable("categories", {
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
-  type: mysqlEnum("type", ["blog", "case"]).notNull(),
+  type: mysqlEnum("type", ["blog", "case", "faq"]).notNull(),
   order: int("order").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

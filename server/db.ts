@@ -496,10 +496,17 @@ export async function getAllCategories() {
   return db.select().from(categories).orderBy(asc(categories.order));
 }
 
-export async function getCategoriesByType(type: "blog" | "case") {
+export async function getCategoriesByType(type: "blog" | "case" | "faq") {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(categories).where(eq(categories.type, type)).orderBy(asc(categories.order));
+}
+
+export async function getCategoryById(categoryId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [category] = await db.select().from(categories).where(eq(categories.id, categoryId)).limit(1);
+  return category;
 }
 
 export async function createCategory(data: typeof categories.$inferInsert) {

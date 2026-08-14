@@ -1,0 +1,1 @@
+ALTER TABLE `categories` MODIFY COLUMN `type` enum('blog','case','faq') NOT NULL;
