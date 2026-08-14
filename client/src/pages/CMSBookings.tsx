@@ -1,20 +1,12 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Phone, Mail, MapPin, Calendar } from "lucide-react";
-
-type BookingStatus = "pending" | "quoted" | "in_progress" | "completed" | "cancelled";
-
-const statusLabels: Record<BookingStatus, string> = {
-  pending: "待聯絡",
-  quoted: "已報價",
-  in_progress: "施工中",
-  completed: "完成",
-  cancelled: "取消",
-};
+import { BOOKING_STATUS_LABELS, isBookingStatus, type BookingStatus } from "@shared/business";
+import { AsyncFeedback } from "@/components/AsyncFeedback";
 
 const statusColors: Record<BookingStatus, string> = {
   pending: "bg-yellow-100 text-yellow-800",
@@ -27,15 +19,20 @@ const statusColors: Record<BookingStatus, string> = {
 export default function CMSBookings() {
   const { user, isAuthenticated } = useAuth();
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all");
+  const [updateError, setUpdateError] = useState("");
+  const [updatingBookingId, setUpdatingBookingId] = useState<number | null>(null);
 
-  const { data: bookings, isLoading, refetch } = trpc.cms.bookings.list.useQuery(undefined, {
+  const { data: bookings, isLoading, error: listError, refetch } = trpc.cms.bookings.list.useQuery(undefined, {
     enabled: isAuthenticated && ["admin", "manager", "customer_service"].includes(user?.role || ""),
   });
 
   const updateMutation = trpc.cms.bookings.update.useMutation({
     onSuccess: () => {
+      setUpdateError("");
       refetch();
     },
+    onError: (error) => setUpdateError(error.message || "無法更新預約狀態，請稍後再試。"),
+    onSettled: () => setUpdatingBookingId(null),
   });
 
   const filteredBookings = bookings?.filter((booking) => {
@@ -66,7 +63,9 @@ export default function CMSBookings() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium text-gray-700">按狀態篩選：</label>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+            <Select value={statusFilter} onValueChange={(value) => {
+              if (value === "all" || isBookingStatus(value)) setStatusFilter(value);
+            }}>
               <SelectTrigger className="w-48">
                 <SelectValue />
               </SelectTrigger>
@@ -85,6 +84,7 @@ export default function CMSBookings() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <AsyncFeedback isPending={updateMutation.isPending} pendingLabel="正在更新預約狀態…" errorMessage={updateError || (listError ? "無法載入預約資料，請重新整理後再試。" : undefined)} />
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="animate-spin w-8 h-8" />
@@ -97,21 +97,22 @@ export default function CMSBookings() {
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">{booking.name}</h3>
                     <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-medium ${
-                      statusColors[booking.status as BookingStatus]
+                      statusColors[(booking.status || "pending") as BookingStatus]
                     }`}>
-                      {statusLabels[booking.status as BookingStatus]}
+                      {BOOKING_STATUS_LABELS[(booking.status || "pending") as BookingStatus]}
                     </span>
                   </div>
                   <Select
                     value={booking.status || "pending"}
-                    onValueChange={(value) =>
-                      updateMutation.mutate({
-                        id: booking.id,
-                        status: value as BookingStatus,
-                      })
-                    }
+                    onValueChange={(value) => {
+                      if (isBookingStatus(value)) {
+                        setUpdatingBookingId(booking.id);
+                        updateMutation.mutate({ id: booking.id, status: value });
+                      }
+                    }}
+                    disabled={updateMutation.isPending}
                   >
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-[140px]" aria-label={`更新 ${booking.name} 的預約狀態`}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -122,6 +123,7 @@ export default function CMSBookings() {
                       <SelectItem value="cancelled">取消</SelectItem>
                     </SelectContent>
                   </Select>
+                  {updatingBookingId === booking.id && <span className="ml-3 flex items-center gap-1 text-sm font-medium text-blue-700"><Loader2 className="h-4 w-4 animate-spin" />更新中</span>}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -133,6 +135,12 @@ export default function CMSBookings() {
                     <div className="flex items-center text-gray-600">
                       <Mail className="w-4 h-4 mr-2" />
                       {booking.email}
+                    </div>
+                  )}
+                  {booking.line && (
+                    <div className="flex items-center text-gray-600">
+                      <span className="mr-2 inline-flex h-4 w-4 items-center justify-center rounded bg-[#06C755] text-[9px] font-bold text-white">L</span>
+                      {booking.line}
                     </div>
                   )}
                   {booking.address && (

@@ -1,20 +1,27 @@
+import React, { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Mail, Phone, CheckCircle } from "lucide-react";
+import { AsyncFeedback } from "@/components/AsyncFeedback";
 
 export default function CMSContacts() {
   const { user, isAuthenticated } = useAuth();
+  const [actionError, setActionError] = useState("");
+  const [updatingContactId, setUpdatingContactId] = useState<number | null>(null);
 
-  const { data: contacts, isLoading, refetch } = trpc.cms.contacts.list.useQuery(undefined, {
+  const { data: contacts, isLoading, error: listError, refetch } = trpc.cms.contacts.list.useQuery(undefined, {
     enabled: isAuthenticated && ["admin", "manager", "customer_service"].includes(user?.role || ""),
   });
 
   const markAsReadMutation = trpc.cms.contacts.markAsRead.useMutation({
     onSuccess: () => {
+      setActionError("");
       refetch();
     },
+    onError: (error) => setActionError(error.message || "無法更新訊息狀態，請稍後再試。"),
+    onSettled: () => setUpdatingContactId(null),
   });
 
   if (!isAuthenticated || !["admin", "manager", "customer_service"].includes(user?.role || "")) {
@@ -41,6 +48,7 @@ export default function CMSContacts() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <AsyncFeedback isPending={markAsReadMutation.isPending} pendingLabel="正在更新訊息狀態…" errorMessage={actionError || (listError ? "無法載入聯繫訊息，請重新整理後再試。" : undefined)} />
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="animate-spin w-8 h-8" />
@@ -71,20 +79,24 @@ export default function CMSContacts() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => markAsReadMutation.mutate({ id: contact.id })}
+                      onClick={() => {
+                        setUpdatingContactId(contact.id);
+                        markAsReadMutation.mutate({ id: contact.id });
+                      }}
                       disabled={markAsReadMutation.isPending}
                     >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      標記為已讀
+                      {updatingContactId === contact.id ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />更新中…</> : <><CheckCircle className="w-4 h-4 mr-1" />標記為已讀</>}
                     </Button>
                   )}
                 </div>
 
                 <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-gray-600">
-                    <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span>{contact.phone}</span>
-                  </div>
+                  {contact.phone ? (
+                    <div className="flex items-center text-gray-600">
+                      <Phone className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <a href={`tel:${contact.phone}`} className="hover:text-primary hover:underline">{contact.phone}</a>
+                    </div>
+                  ) : <p className="text-sm text-gray-500">未提供電話</p>}
                   {contact.email && (
                     <div className="flex items-center text-gray-600">
                       <Mail className="w-4 h-4 mr-2 flex-shrink-0" />
@@ -93,6 +105,7 @@ export default function CMSContacts() {
                       </a>
                     </div>
                   )}
+                  {!contact.email && <p className="text-sm text-gray-500">未提供 Email</p>}
                 </div>
 
                 <div className="p-4 bg-gray-50 rounded">

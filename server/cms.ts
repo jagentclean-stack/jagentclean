@@ -3,6 +3,7 @@ import * as db from "./db";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
 import { decodeMediaUpload, mediaStorageFilename } from "./mediaUpload";
+import { BOOKING_STATUSES } from "../shared/business";
 
 // Type assertion helper for role checking
 type AllowedRoles = "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
@@ -238,7 +239,7 @@ export const cmsRouter = router({
     }),
 
     getByStatus: protectedProcedure
-      .input(z.object({ status: z.string() }))
+      .input(z.object({ status: z.enum(BOOKING_STATUSES) }))
       .query(async ({ input, ctx }) => {
         if (!checkRole(ctx.user?.role, "admin", "manager", "customer_service")) {
           throw new Error("Unauthorized");
@@ -258,7 +259,10 @@ export const cmsRouter = router({
           requirements: z.string().optional(),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "manager", "customer_service")) {
+          throw new Error("Unauthorized");
+        }
         return db.createBooking({
           ...input,
           status: "pending",
@@ -269,7 +273,7 @@ export const cmsRouter = router({
       .input(
         z.object({
           id: z.number(),
-          status: z.enum(["pending", "quoted", "in_progress", "completed", "cancelled"]).optional(),
+          status: z.enum(BOOKING_STATUSES).optional(),
           name: z.string().optional(),
           phone: z.string().optional(),
           email: z.string().optional(),
