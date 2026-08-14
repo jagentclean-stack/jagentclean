@@ -1,253 +1,209 @@
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Plus, Edit2, Trash2, Calendar, MapPin } from "lucide-react";
-import { z } from "zod";
+import { AlertCircle, Calendar, CheckCircle2, Edit2, ImageIcon, Loader2, MapPin, Plus, Save, Trash2 } from "lucide-react";
 
-const caseSchema = z.object({
-  name: z.string().min(1, "案例名稱必填"),
-  slug: z.string().min(1, "URL Slug 必填"),
-  location: z.string().optional(),
-  description: z.string().optional(),
-  beforeImage: z.string().optional(),
-  afterImage: z.string().optional(),
+type CaseDraft = {
+  title: string;
+  slug: string;
+  address: string;
+  serviceId: string;
+  constructionDate: string;
+  constructionTime: string;
+  beforeImages: string;
+  afterImages: string;
+  video: string;
+  testimonial: string;
+  googleReview: string;
+  tags: string;
+  categoryId: string;
+  order: string;
+  isPublished: boolean;
+};
+
+const ADMIN_EMAILS = new Set(["jagentclean@gmail.com", "emilyku0jj@gmail.com"]);
+const EDITOR_ROLES = new Set(["super_admin", "admin", "editor"]);
+
+const blankDraft = (): CaseDraft => ({
+  title: "", slug: "", address: "", serviceId: "", constructionDate: "", constructionTime: "",
+  beforeImages: "", afterImages: "", video: "", testimonial: "", googleReview: "", tags: "",
+  categoryId: "", order: "0", isPublished: true,
 });
 
-type CaseFormData = z.infer<typeof caseSchema>;
+const stringValue = (value: unknown) => value == null ? "" : String(value);
+const stringArray = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+const commaSeparated = (value: unknown) => stringArray(value).join(", ");
+const parseCommaList = (value: string) => value.split(",").map((item) => item.trim()).filter(Boolean);
+const optionalNumber = (value: string) => value.trim() ? Number(value) : null;
+const dateInputValue = (value: unknown) => {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+};
 
 export default function CMSCases() {
   const { user, isAuthenticated } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState<CaseFormData>({
-    name: "",
-    slug: "",
-    location: "",
-    description: "",
-    beforeImage: "",
-    afterImage: "",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const isNamedAdmin = Boolean(user?.email && ADMIN_EMAILS.has(user.email));
+  const canEdit = Boolean(isNamedAdmin || (user?.role && EDITOR_ROLES.has(user.role)));
+  const canDelete = Boolean(isNamedAdmin || (user?.role && ["super_admin", "admin"].includes(user.role)));
+  const utils = trpc.useUtils();
+  const { data: cases, isLoading } = trpc.cms.cases.list.useQuery(undefined, { enabled: Boolean(isAuthenticated && canEdit) });
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [draft, setDraft] = useState<CaseDraft>(blankDraft);
+  const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const { data: cases, isLoading, refetch } = trpc.cms.cases.list.useQuery(undefined, {
-    enabled: isAuthenticated && ["admin", "editor"].includes(user?.role || ""),
-  });
-
-  const createMutation = trpc.cms.cases.create.useMutation({
-    onSuccess: () => {
-      setFormData({
-        name: "",
-        slug: "",
-        location: "",
-        description: "",
-        beforeImage: "",
-        afterImage: "",
-      });
-      setIsOpen(false);
-      refetch();
-    },
-  });
-
-  const deleteMutation = trpc.cms.cases.delete.useMutation({
-    onSuccess: () => {
-      refetch();
-    },
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
-    }
+  const refreshCases = async () => {
+    await utils.cms.cases.list.invalidate();
+    await utils.cms.publicContent.cases.invalidate();
   };
+  const createCase = trpc.cms.cases.create.useMutation({
+    onSuccess: async () => {
+      await refreshCases();
+      closeDialog();
+      setNotice({ type: "success", text: "案例已建立；公開狀態已同步更新。" });
+    },
+    onError: (error) => setNotice({ type: "error", text: error.message || "建立案例失敗，請檢查欄位後重試。" }),
+  });
+  const updateCase = trpc.cms.cases.update.useMutation({
+    onSuccess: async () => {
+      await refreshCases();
+      closeDialog();
+      setNotice({ type: "success", text: "案例內容已更新；已發布案例會同步反映於前台。" });
+    },
+    onError: (error) => setNotice({ type: "error", text: error.message || "更新案例失敗，請檢查欄位後重試。" }),
+  });
+  const deleteCase = trpc.cms.cases.delete.useMutation({
+    onSuccess: async () => {
+      await refreshCases();
+      setNotice({ type: "success", text: "案例已刪除。" });
+    },
+    onError: (error) => setNotice({ type: "error", text: error.message || "刪除案例失敗。" }),
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (!open) {
+      setEditingId(null);
+      setDraft(blankDraft());
+    }
+  }, [open]);
 
+  function closeDialog() {
+    setOpen(false);
+    setEditingId(null);
+  }
+  function updateDraft(field: keyof CaseDraft, value: string | boolean) {
+    setDraft((current) => ({ ...current, [field]: value }));
+  }
+  function openCreate() {
+    setEditingId(null);
+    setDraft(blankDraft());
+    setOpen(true);
+  }
+  function openEdit(caseItem: NonNullable<typeof cases>[number]) {
+    setEditingId(caseItem.id);
+    setDraft({
+      title: caseItem.title,
+      slug: caseItem.slug,
+      address: stringValue(caseItem.address),
+      serviceId: stringValue(caseItem.serviceId),
+      constructionDate: dateInputValue(caseItem.constructionDate),
+      constructionTime: stringValue(caseItem.constructionTime),
+      beforeImages: commaSeparated(caseItem.beforeImages),
+      afterImages: commaSeparated(caseItem.afterImages),
+      video: stringValue(caseItem.video),
+      testimonial: stringValue(caseItem.testimonial),
+      googleReview: stringValue(caseItem.googleReview),
+      tags: commaSeparated(caseItem.tags),
+      categoryId: stringValue(caseItem.categoryId),
+      order: stringValue(caseItem.order ?? 0),
+      isPublished: Boolean(caseItem.isPublished),
+    });
+    setOpen(true);
+  }
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!draft.title.trim() || !draft.slug.trim()) {
+      setNotice({ type: "error", text: "請填寫案例標題與 URL Slug。" });
+      return;
+    }
+    const constructionDate = draft.constructionDate ? new Date(`${draft.constructionDate}T00:00:00`) : null;
+    if (constructionDate && Number.isNaN(constructionDate.getTime())) {
+      setNotice({ type: "error", text: "施工日期格式不正確。" });
+      return;
+    }
+    const payload = {
+      title: draft.title.trim(),
+      slug: draft.slug.trim(),
+      address: draft.address.trim(),
+      serviceId: optionalNumber(draft.serviceId),
+      constructionDate,
+      constructionTime: draft.constructionTime.trim(),
+      beforeImages: parseCommaList(draft.beforeImages),
+      afterImages: parseCommaList(draft.afterImages),
+      video: draft.video.trim(),
+      testimonial: draft.testimonial.trim(),
+      googleReview: draft.googleReview.trim(),
+      tags: parseCommaList(draft.tags),
+      categoryId: optionalNumber(draft.categoryId),
+      order: Number(draft.order || 0),
+      isPublished: draft.isPublished,
+    };
+    if (!Number.isInteger(payload.order) || payload.order < 0) {
+      setNotice({ type: "error", text: "排序必須為 0 或以上的整數。" });
+      return;
+    }
     try {
-      caseSchema.parse(formData);
-      setErrors({});
-      await createMutation.mutateAsync(formData as any);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {};
-        (error as any).issues?.forEach((issue: any) => {
-          if (issue.path[0]) {
-            newErrors[issue.path[0] as string] = issue.message;
-          }
-        });
-        setErrors(newErrors);
-      }
+      if (editingId == null) await createCase.mutateAsync(payload);
+      else await updateCase.mutateAsync({ id: editingId, ...payload });
+    } catch {
+      // onError 已將可讀錯誤訊息呈現在頁面上。
     }
-  };
-
-  if (!isAuthenticated || !["admin", "editor"].includes(user?.role || "")) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-600">無法存取此頁面</p>
-      </div>
-    );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">案例管理</h1>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                新增案例
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>新增案例</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    案例名稱 *
-                  </label>
-                  <Input
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="例如：浴室除霉案例"
-                    className={errors.name ? "border-red-500" : ""}
-                  />
-                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                </div>
+  if (!isAuthenticated || !canEdit) {
+    return <div className="grid min-h-screen place-items-center bg-slate-50 px-6 text-slate-600">您沒有管理案例內容的權限。</div>;
+  }
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    URL Slug *
-                  </label>
-                  <Input
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleInputChange}
-                    placeholder="例如：bathroom-mold-removal"
-                    className={errors.slug ? "border-red-500" : ""}
-                  />
-                  {errors.slug && <p className="text-red-500 text-sm mt-1">{errors.slug}</p>}
-                </div>
+  const pending = createCase.isPending || updateCase.isPending;
+  return <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-8"><div className="mx-auto max-w-7xl space-y-6">
+    <header className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white px-6 py-7 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div><p className="mb-2 text-sm font-semibold tracking-[0.16em] text-[#163C72]">CASE STUDIES</p><h1 className="text-3xl font-bold tracking-tight text-slate-950">案例管理</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">集中管理施工資訊、Before／After 圖片、影片、心得、Google 評論、分類、標籤、排序及公開狀態。</p></div>
+      <Button onClick={openCreate} className="bg-[#163C72] text-white hover:bg-[#102f5d]"><Plus className="mr-2 h-4 w-4" />新增案例</Button>
+    </header>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    施工地點
-                  </label>
-                  <Input
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="例如：台北市信義區"
-                  />
-                </div>
+    {notice && <div role="status" className={`flex gap-3 rounded-2xl border px-5 py-4 text-sm ${notice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{notice.type === "success" ? <CheckCircle2 className="h-5 w-5 shrink-0" /> : <AlertCircle className="h-5 w-5 shrink-0" />}{notice.text}</div>}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    案例介紹
-                  </label>
-                  <Textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="詳細的案例介紹..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="outline" onClick={() => setIsOpen(false)}>
-                    取消
-                  </Button>
-                  <Button type="submit" disabled={createMutation.isPending}>
-                    {createMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        保存中...
-                      </>
-                    ) : (
-                      "保存"
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+    {isLoading ? <div className="grid min-h-60 place-items-center"><Loader2 className="h-8 w-8 animate-spin text-[#163C72]" /></div> : cases?.length ? <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{cases.map((caseItem) => {
+      const preview = stringArray(caseItem.afterImages)[0] || stringArray(caseItem.beforeImages)[0];
+      return <Card key={caseItem.id} className="flex min-h-80 flex-col overflow-hidden rounded-3xl border-slate-200 bg-white shadow-sm">
+        {preview ? <img src={preview} alt="" className="h-44 w-full object-cover" loading="lazy" /> : <div className="grid h-44 place-items-center bg-slate-100 text-slate-400"><ImageIcon className="h-8 w-8" /></div>}
+        <div className="flex flex-1 flex-col p-6"><div className="mb-4 flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-xs font-semibold tracking-wide text-[#163C72]">/{caseItem.slug}</p><h2 className="mt-1 text-xl font-bold text-slate-900">{caseItem.title}</h2></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${caseItem.isPublished ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"}`}>{caseItem.isPublished ? "公開中" : "草稿"}</span></div>
+          {caseItem.address && <p className="mb-2 flex items-center gap-1.5 text-sm text-slate-600"><MapPin className="h-4 w-4 shrink-0" />{caseItem.address}</p>}
+          {caseItem.constructionDate && <p className="mb-3 flex items-center gap-1.5 text-sm text-slate-600"><Calendar className="h-4 w-4 shrink-0" />{new Date(caseItem.constructionDate).toLocaleDateString("zh-TW")}</p>}
+          {caseItem.testimonial && <p className="line-clamp-3 text-sm leading-6 text-slate-600">{caseItem.testimonial}</p>}
+          <div className="mt-auto flex gap-2 pt-6"><Button size="sm" variant="outline" onClick={() => openEdit(caseItem)} className="flex-1"><Edit2 className="mr-1.5 h-4 w-4" />編輯</Button>{canDelete && <Button size="sm" variant="outline" onClick={() => deleteCase.mutate({ id: caseItem.id })} disabled={deleteCase.isPending} className="text-red-700 hover:text-red-800"><Trash2 className="h-4 w-4" /><span className="sr-only">刪除 {caseItem.title}</span></Button>}</div>
         </div>
-      </div>
+      </Card>;
+    })}</div> : <Card className="rounded-3xl border-dashed p-12 text-center text-slate-600">尚無案例資料。<Button variant="link" onClick={openCreate}>立即建立第一個案例</Button></Card>}
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="animate-spin w-8 h-8" />
-          </div>
-        ) : cases && cases.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cases.map((caseItem) => (
-              <Card key={caseItem.id} className="overflow-hidden">
-                <div className="aspect-video bg-gray-100"></div>
-                <div className="p-4">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{caseItem.title}</h3>
-                  {caseItem.address && (
-                    <div className="flex items-center text-gray-600 text-sm mb-2">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {caseItem.address}
-                    </div>
-                  )}
-                  {caseItem.testimonial && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">{caseItem.testimonial}</p>
-                  )}
-                  <div className="flex gap-2 pt-4">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Edit2 className="w-4 h-4 mr-1" />
-                      編輯
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-red-600 hover:text-red-700"
-                      onClick={() => deleteMutation.mutate({ id: caseItem.id })}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      刪除
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="p-12 text-center">
-            <p className="text-gray-600 mb-4">尚無案例</p>
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  新增第一個案例
-                </Button>
-              </DialogTrigger>
-            </Dialog>
-          </Card>
-        )}
-      </div>
-    </div>
-  );
+    <Dialog open={open} onOpenChange={(value) => { if (!value) closeDialog(); }}><DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto"><DialogHeader><DialogTitle>{editingId == null ? "新增案例" : "編輯案例"}</DialogTitle><DialogDescription>Before／After 圖片、標籤可用逗號分隔；僅公開中的案例會出現在前台案例頁。</DialogDescription></DialogHeader>{notice?.type === "error" && <div role="alert" className="flex gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800"><AlertCircle className="h-5 w-5 shrink-0" />{notice.text}</div>}<form onSubmit={handleSubmit} className="space-y-6">
+      <section className="grid gap-4 sm:grid-cols-2"><Field label="案例標題 *"><Input value={draft.title} onChange={(event) => updateDraft("title", event.target.value)} placeholder="例如：浴室除霉案例" /></Field><Field label="URL Slug *"><Input value={draft.slug} onChange={(event) => updateDraft("slug", event.target.value)} placeholder="例如：bathroom-mold-removal" /></Field><Field label="施工地址"><Input value={draft.address} onChange={(event) => updateDraft("address", event.target.value)} placeholder="例如：台南市安南區" /></Field><Field label="服務 ID"><Input inputMode="numeric" value={draft.serviceId} onChange={(event) => updateDraft("serviceId", event.target.value)} placeholder="選填，例如：1" /></Field><Field label="施工日期"><Input type="date" value={draft.constructionDate} onChange={(event) => updateDraft("constructionDate", event.target.value)} /></Field><Field label="施工時間／工期"><Input value={draft.constructionTime} onChange={(event) => updateDraft("constructionTime", event.target.value)} placeholder="例如：4 小時" /></Field></section>
+      <section className="grid gap-4 sm:grid-cols-2"><Field label="Before 圖片 URL"><Textarea value={draft.beforeImages} onChange={(event) => updateDraft("beforeImages", event.target.value)} rows={3} placeholder="多張請用逗號分隔，例如：/manus-storage/before-1.webp, /manus-storage/before-2.webp" /></Field><Field label="After 圖片 URL"><Textarea value={draft.afterImages} onChange={(event) => updateDraft("afterImages", event.target.value)} rows={3} placeholder="多張請用逗號分隔，例如：/manus-storage/after-1.webp, /manus-storage/after-2.webp" /></Field><Field label="影片 URL" className="sm:col-span-2"><Input value={draft.video} onChange={(event) => updateDraft("video", event.target.value)} placeholder="YouTube 或影片網址" /></Field></section>
+      <Field label="客戶心得／案例說明"><Textarea value={draft.testimonial} onChange={(event) => updateDraft("testimonial", event.target.value)} rows={5} placeholder="說明施工前後的情況、處理方式及客戶回饋。" /></Field>
+      <section className="grid gap-4 sm:grid-cols-2"><Field label="Google 評論連結或摘要"><Input value={draft.googleReview} onChange={(event) => updateDraft("googleReview", event.target.value)} placeholder="https://… 或已授權引用摘要" /></Field><Field label="標籤"><Input value={draft.tags} onChange={(event) => updateDraft("tags", event.target.value)} placeholder="例如：浴室, 除霉, 居家清潔" /></Field><Field label="案例分類 ID"><Input inputMode="numeric" value={draft.categoryId} onChange={(event) => updateDraft("categoryId", event.target.value)} placeholder="選填，例如：1" /></Field><Field label="排序"><Input inputMode="numeric" value={draft.order} onChange={(event) => updateDraft("order", event.target.value)} placeholder="0" /></Field></section>
+      <label className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800"><span><span className="block">公開案例</span><span className="mt-1 block text-xs font-normal text-slate-500">關閉後案例不會出現在公開案例頁。</span></span><Switch aria-label="公開案例" checked={draft.isPublished} onCheckedChange={(value) => updateDraft("isPublished", value)} /></label>
+      <div className="flex justify-end gap-3 border-t border-slate-100 pt-5"><Button type="button" variant="outline" onClick={closeDialog}>取消</Button><Button type="submit" disabled={pending} className="bg-[#163C72] text-white hover:bg-[#102f5d]"><Save className="mr-2 h-4 w-4" />{pending ? "儲存中…" : "儲存案例"}</Button></div>
+    </form></DialogContent></Dialog>
+  </div></div>;
+}
+
+function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+  return <label className={`block space-y-2 text-sm font-medium text-slate-700 ${className}`}><span>{label}</span>{children}</label>;
 }

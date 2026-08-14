@@ -548,7 +548,7 @@ export const cmsRouter = router({
    */
   cases: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "editor")) {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
         throw new Error("Unauthorized");
       }
       return db.getAllCases();
@@ -557,7 +557,7 @@ export const cmsRouter = router({
     getBySlug: protectedProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
           throw new Error("Unauthorized");
         }
         return db.getCaseBySlug(input.slug);
@@ -566,16 +566,25 @@ export const cmsRouter = router({
     create: protectedProcedure
       .input(
         z.object({
-          name: z.string(),
-          slug: z.string(),
-          location: z.string().optional(),
-          description: z.string().optional(),
-          beforeImage: z.string().optional(),
-          afterImage: z.string().optional(),
+          title: z.string().trim().min(1, "案例標題必填").max(255),
+          slug: z.string().trim().min(1, "URL Slug 必填").max(255),
+          address: z.string().trim().max(500).optional(),
+          serviceId: z.number().int().positive().nullable().optional(),
+          constructionDate: z.coerce.date().nullable().optional(),
+          constructionTime: z.string().trim().max(255).optional(),
+          beforeImages: z.array(z.string().trim().min(1).max(500)).max(20).optional(),
+          afterImages: z.array(z.string().trim().min(1).max(500)).max(20).optional(),
+          video: z.string().trim().max(500).optional(),
+          testimonial: z.string().trim().max(10_000).optional(),
+          googleReview: z.string().trim().max(500).optional(),
+          tags: z.array(z.string().trim().min(1).max(100)).max(30).optional(),
+          categoryId: z.number().int().positive().nullable().optional(),
+          order: z.number().int().min(0).max(100_000).optional(),
+          isPublished: z.boolean().default(true),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
           throw new Error("Unauthorized");
         }
         return db.createCase(input as any);
@@ -585,17 +594,25 @@ export const cmsRouter = router({
       .input(
         z.object({
           id: z.number(),
-          name: z.string().optional(),
-          slug: z.string().optional(),
-          location: z.string().optional(),
-          description: z.string().optional(),
-          beforeImage: z.string().optional(),
-          afterImage: z.string().optional(),
+          title: z.string().trim().min(1).max(255).optional(),
+          slug: z.string().trim().min(1).max(255).optional(),
+          address: z.string().trim().max(500).optional(),
+          serviceId: z.number().int().positive().nullable().optional(),
+          constructionDate: z.coerce.date().nullable().optional(),
+          constructionTime: z.string().trim().max(255).optional(),
+          beforeImages: z.array(z.string().trim().min(1).max(500)).max(20).optional(),
+          afterImages: z.array(z.string().trim().min(1).max(500)).max(20).optional(),
+          video: z.string().trim().max(500).optional(),
+          testimonial: z.string().trim().max(10_000).optional(),
+          googleReview: z.string().trim().max(500).optional(),
+          tags: z.array(z.string().trim().min(1).max(100)).max(30).optional(),
+          categoryId: z.number().int().positive().nullable().optional(),
+          order: z.number().int().min(0).max(100_000).optional(),
           isPublished: z.boolean().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -605,7 +622,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) {
           throw new Error("Unauthorized");
         }
         return db.deleteCase(input.id);
@@ -617,7 +634,7 @@ export const cmsRouter = router({
    */
   blogs: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "editor", "marketing")) {
+      if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
         throw new Error("Unauthorized");
       }
       return db.getAllBlogs();
@@ -626,7 +643,7 @@ export const cmsRouter = router({
     getBySlug: protectedProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor", "marketing")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
           throw new Error("Unauthorized");
         }
         return db.getBlogBySlug(input.slug);
@@ -635,46 +652,79 @@ export const cmsRouter = router({
     create: protectedProcedure
       .input(
         z.object({
-          title: z.string(),
-          slug: z.string(),
-          excerpt: z.string().optional(),
-          content: z.string().optional(),
+          title: z.string().trim().min(1, "文章標題必填").max(255),
+          slug: z.string().trim().min(1, "URL Slug 必填").max(255),
+          excerpt: z.string().trim().max(500).optional(),
+          content: z.string().max(100_000).optional(),
+          featuredImage: z.string().trim().max(500).nullable().optional(),
+          categoryId: z.number().int().positive().nullable().optional(),
           isPublished: z.boolean().default(false),
+          publishedAt: z.coerce.date().nullable().optional(),
+          scheduledAt: z.coerce.date().nullable().optional(),
+          seoTitle: z.string().trim().max(255).nullable().optional(),
+          seoDescription: z.string().trim().max(500).nullable().optional(),
+          seoKeywords: z.string().trim().max(500).nullable().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
           throw new Error("Unauthorized");
         }
-        return db.createBlog(input as any);
+        return db.createBlog({
+          ...input,
+          authorId: ctx.user?.id,
+          publishedAt: input.publishedAt ?? (input.isPublished ? new Date() : null),
+        } as any);
       }),
 
     update: protectedProcedure
       .input(
         z.object({
           id: z.number(),
-          title: z.string().optional(),
-          slug: z.string().optional(),
-          excerpt: z.string().optional(),
-          content: z.string().optional(),
+          title: z.string().trim().min(1).max(255).optional(),
+          slug: z.string().trim().min(1).max(255).optional(),
+          excerpt: z.string().trim().max(500).nullable().optional(),
+          content: z.string().max(100_000).nullable().optional(),
+          featuredImage: z.string().trim().max(500).nullable().optional(),
+          categoryId: z.number().int().positive().nullable().optional(),
           isPublished: z.boolean().optional(),
+          publishedAt: z.coerce.date().nullable().optional(),
+          scheduledAt: z.coerce.date().nullable().optional(),
+          seoTitle: z.string().trim().max(255).nullable().optional(),
+          seoDescription: z.string().trim().max(500).nullable().optional(),
+          seoKeywords: z.string().trim().max(500).nullable().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor", "marketing")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
-        return db.updateBlog(id, data as any);
+        return db.updateBlog(id, {
+          ...data,
+          publishedAt: data.publishedAt ?? (data.isPublished ? new Date() : undefined),
+        } as any);
       }),
 
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) {
           throw new Error("Unauthorized");
         }
         return db.deleteBlog(input.id);
+      }),
+  }),
+
+  /** 可供內容管理表單使用的分類清單。 */
+  categories: router({
+    list: protectedProcedure
+      .input(z.object({ type: z.enum(["blog", "case"]).optional() }).optional())
+      .query(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+          throw new Error("Unauthorized");
+        }
+        return input?.type ? db.getCategoriesByType(input.type) : db.getAllCategories();
       }),
   }),
 
