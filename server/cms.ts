@@ -45,6 +45,10 @@ export const cmsRouter = router({
       };
     }),
     services: publicProcedure.query(() => db.getPublishedServices()),
+    cases: publicProcedure.query(() => db.getPublishedCases()),
+    blogs: publicProcedure.query(() => db.getPublishedBlogs()),
+    faqs: publicProcedure.query(() => db.getVisibleFAQs()),
+    footer: publicProcedure.query(() => db.getPublishedFooter()),
   }),
 
   /**

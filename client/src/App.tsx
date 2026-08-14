@@ -15,6 +15,8 @@ import Process from "./pages/Process";
 import Testimonials from "./pages/Testimonials";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
+import Cases from "./pages/Cases";
+import Blog from "./pages/Blog";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDebug from "./pages/AdminDebug";
 import CMSDashboard from "./pages/CMSDashboard";
@@ -46,6 +48,8 @@ function Router() {
         <Route path={"/testimonials"} component={Testimonials} />
         <Route path={"/faq"} component={FAQ} />
         <Route path={"/contact"} component={Contact} />
+        <Route path={"/cases"} component={Cases} />
+        <Route path={"/blog"} component={Blog} />
 
         <Route path={"/admin/login"} component={AdminLogin} />
         <Route path={"/admin/debug"} component={AdminDebug} />

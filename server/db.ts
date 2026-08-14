@@ -1,4 +1,4 @@
-import { eq, and, desc, asc } from "drizzle-orm";
+import { eq, and, desc, asc, isNull, lte, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, roles, permissions, pages, sections, menus, services, cases, blogs, categories, faqs, reviews, banners, media, contacts, bookings, settings, seo, hero, footer, Hero, Footer, InsertHero, InsertFooter } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -336,6 +336,17 @@ export async function getAllCases() {
   return db.select().from(cases).orderBy(asc(cases.order));
 }
 
+/** 僅供公開網站使用：不回傳草稿或未發布案例。 */
+export async function getPublishedCases() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(cases)
+    .where(eq(cases.isPublished, true))
+    .orderBy(asc(cases.order), desc(cases.createdAt));
+}
+
 export async function getCaseBySlug(slug: string) {
   const db = await getDb();
   if (!db) return undefined;
@@ -368,6 +379,23 @@ export async function getAllBlogs() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(blogs).orderBy(desc(blogs.publishedAt));
+}
+
+/** 僅供公開網站使用：排程時間未到的文章不會被公開。 */
+export async function getPublishedBlogs() {
+  const db = await getDb();
+  if (!db) return [];
+  const now = new Date();
+  return db
+    .select()
+    .from(blogs)
+    .where(
+      and(
+        eq(blogs.isPublished, true),
+        or(isNull(blogs.scheduledAt), lte(blogs.scheduledAt, now))
+      )
+    )
+    .orderBy(desc(blogs.publishedAt), desc(blogs.createdAt));
 }
 
 export async function getBlogBySlug(slug: string) {
