@@ -8,7 +8,7 @@ import { decodeMediaUpload, mediaStorageFilename } from "./mediaUpload";
 import { BOOKING_STATUSES } from "../shared/business";
 
 // Type assertion helper for role checking
-type AllowedRoles = "super_admin" | "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
+export type AllowedRoles = "super_admin" | "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
 
 // 管理員 email 白名單
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
@@ -29,14 +29,104 @@ export function validateCmsSettingValue(key: z.infer<typeof cmsSettingKeySchema>
   if (key === "meta_pixel_id" && value && !/^\d{5,20}$/.test(value)) throw new Error("Meta Pixel ID 格式不正確");
 }
 
-const checkRole = (userRole: string | undefined | null, userEmailOrFirstRole: string | undefined | null, ...allowedRoles: AllowedRoles[]): boolean => {
-  const userEmail = userEmailOrFirstRole?.includes("@") ? userEmailOrFirstRole : null;
-  const resolvedRoles = userEmail ? allowedRoles : [userEmailOrFirstRole, ...allowedRoles];
-  // 如果 email 在白名單中，自動授予 admin 權限
+export const CMS_ROLE_ALIASES = {
+  manager: "admin",
+} as const;
+
+/**
+ * CMS 的唯一功能權限來源。super_admin 與指定的最高權限 Email 由
+ * `canAccessCmsPermission` 統一繼承所有權限，不需要重複列入每個項目。
+ */
+export const CMS_PERMISSIONS = {
+  DASHBOARD_READ: ["admin"],
+  PAGES_READ: ["admin", "editor"],
+  PAGES_CREATE: ["admin"],
+  PAGES_UPDATE: ["admin", "editor"],
+  PAGES_DELETE: ["admin"],
+  SERVICES_READ: ["admin", "editor"],
+  SERVICES_CREATE: ["admin"],
+  SERVICES_UPDATE: ["admin", "editor"],
+  SERVICES_DELETE: ["admin"],
+  BOOKINGS_MANAGE: ["admin", "customer_service"],
+  CONTACTS_READ: ["admin", "customer_service"],
+  CONTACTS_UPDATE: ["admin", "customer_service"],
+  MEDIA_MANAGE: ["admin", "editor"],
+  MEDIA_DELETE: ["admin"],
+  SETTINGS_MANAGE: ["admin"],
+  CASES_MANAGE: ["admin", "editor"],
+  CASES_DELETE: ["admin"],
+  BLOGS_MANAGE: ["admin", "editor", "marketing"],
+  BLOGS_DELETE: ["admin"],
+  CATEGORIES_MANAGE: ["admin", "editor", "marketing"],
+  CATEGORIES_DELETE: ["admin"],
+  FAQS_MANAGE: ["admin", "editor"],
+  FAQS_DELETE: ["admin"],
+  MENUS_MANAGE: ["admin"],
+  SEO_MANAGE: ["admin", "editor"],
+  USERS_MANAGE: ["admin"],
+  HERO_MANAGE: ["admin", "editor"],
+  HERO_DELETE: ["admin"],
+  FOOTER_MANAGE: ["admin", "editor"],
+  FOOTER_DELETE: ["admin"],
+  REVIEWS_MANAGE: ["admin", "marketing"],
+  REVIEWS_DELETE: ["admin"],
+} as const satisfies Record<string, readonly AllowedRoles[]>;
+
+export type CmsPermission = keyof typeof CMS_PERMISSIONS;
+
+export const resolveCmsPermission = (roles: readonly AllowedRoles[]): CmsPermission | undefined => {
+  const normalizedRoles = Array.from(new Set(
+    roles
+      .filter((role) => role !== "super_admin")
+      .map((role) => normalizeCmsRole(role))
+      .filter((role): role is AllowedRoles => Boolean(role)),
+  )).sort();
+  return (Object.keys(CMS_PERMISSIONS) as CmsPermission[]).find((permission) => {
+    const permissionRoles = [...CMS_PERMISSIONS[permission]].sort();
+    return permissionRoles.length === normalizedRoles.length
+      && permissionRoles.every((role, index) => role === normalizedRoles[index]);
+  });
+};
+
+export const normalizeCmsRole = (role: string | undefined | null): AllowedRoles | undefined => {
+  if (!role) return undefined;
+  return (CMS_ROLE_ALIASES[role as keyof typeof CMS_ROLE_ALIASES] ?? role) as AllowedRoles;
+};
+
+export const canAccessCmsPermission = (
+  userRole: string | undefined | null,
+  userEmail: string | undefined | null,
+  permission: CmsPermission,
+): boolean => {
+  const normalizedRole = normalizeCmsRole(userRole);
+  // Email 白名單及 Super Admin 為跨功能繼承規則，避免各個路由發生遺漏。
   if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
     return true;
   }
-  return resolvedRoles.includes(userRole as AllowedRoles);
+  if (normalizedRole === "super_admin") return true;
+  return CMS_PERMISSIONS[permission].includes(normalizedRole as never);
+};
+
+/**
+ * 舊路由在遷移期間的相容層。所有既有角色組合會先對應至權限矩陣；新路由
+ * 必須直接使用 canAccessCmsPermission，避免日後新增功能時重複撰寫角色判斷。
+ */
+const checkRole = (
+  userRole: string | undefined | null,
+  userEmailOrFirstRole: string | undefined | null,
+  ...allowedRoles: AllowedRoles[]
+): boolean => {
+  const userEmail = userEmailOrFirstRole?.includes("@") ? userEmailOrFirstRole : null;
+  const legacyRoles = userEmail ? allowedRoles : [userEmailOrFirstRole as AllowedRoles, ...allowedRoles];
+  const matchingPermission = resolveCmsPermission(legacyRoles);
+  if (matchingPermission) return canAccessCmsPermission(userRole, userEmail, matchingPermission);
+  const normalizedRole = normalizeCmsRole(userRole);
+  if (userEmail && ADMIN_EMAILS.includes(userEmail)) return true;
+  if (normalizedRole === "super_admin") return true;
+  const normalizedLegacyRoles = legacyRoles
+    .filter((role): role is AllowedRoles => Boolean(role) && role !== "super_admin")
+    .map((role) => normalizeCmsRole(role));
+  return normalizedLegacyRoles.includes(normalizedRole as AllowedRoles);
 };
 
 const priceValueSchema = z.string().trim().regex(/^$|^\d+(?:\.\d{1,2})?$/, "價格僅能輸入最多兩位小數的非負數").optional();
@@ -167,7 +257,7 @@ export const cmsRouter = router({
    */
   pages: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "editor")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "PAGES_READ")) {
         throw new Error("Unauthorized");
       }
       return db.getAllPages();
@@ -176,7 +266,7 @@ export const cmsRouter = router({
     getBySlug: protectedProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "PAGES_READ")) {
           throw new Error("Unauthorized");
         }
         return db.getPageBySlug(input.slug);
@@ -191,7 +281,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "PAGES_CREATE")) {
           throw new Error("Unauthorized");
         }
         return db.createPage({
@@ -211,7 +301,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "PAGES_UPDATE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -221,7 +311,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "PAGES_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deletePage(input.id);
