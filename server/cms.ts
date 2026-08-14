@@ -1,6 +1,6 @@
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 
 // Type assertion helper for role checking
 type AllowedRoles = "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
@@ -8,12 +8,14 @@ type AllowedRoles = "admin" | "manager" | "customer_service" | "marketing" | "ed
 // 管理員 email 白名單
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
-const checkRole = (userRole: string | undefined | null, userEmail: string | undefined | null, ...allowedRoles: AllowedRoles[]): boolean => {
+const checkRole = (userRole: string | undefined | null, userEmailOrFirstRole: string | undefined | null, ...allowedRoles: AllowedRoles[]): boolean => {
+  const userEmail = userEmailOrFirstRole?.includes("@") ? userEmailOrFirstRole : null;
+  const resolvedRoles = userEmail ? allowedRoles : [userEmailOrFirstRole, ...allowedRoles];
   // 如果 email 在白名單中，自動授予 admin 權限
   if (userEmail && ADMIN_EMAILS.includes(userEmail)) {
     return true;
   }
-  return allowedRoles.includes(userRole as AllowedRoles);
+  return resolvedRoles.includes(userRole as AllowedRoles);
 };
 
 /**

@@ -6,7 +6,7 @@ import { Loader2, Copy, Check } from "lucide-react";
 import { useState } from "react";
 
 export default function AdminDebug() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, logout } = useAuth();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = (text: string) => {
@@ -23,14 +23,14 @@ export default function AdminDebug() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || user?.role !== "admin") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">需要登入</h1>
-          <p className="text-gray-600 mb-6">請先登入以查看調試資訊。</p>
-          <Link href="/">
-            <Button>返回首頁</Button>
+          <h1 className="text-2xl font-bold mb-4">需要管理員權限</h1>
+          <p className="text-gray-600 mb-6">請使用已核准的管理員帳號登入後查看診斷資訊。</p>
+          <Link href="/admin/login">
+            <Button>前往管理員登入</Button>
           </Link>
         </div>
       </div>
@@ -121,7 +121,7 @@ export default function AdminDebug() {
               <span className="font-medium">Session Cookie:</span> 已設定
             </p>
             <p className="text-gray-600">
-              <span className="font-medium">Authentication:</span> OAuth 2.0
+              <span className="font-medium">Authentication:</span> 受保護的管理員工作階段
             </p>
             <p className="text-gray-600">
               <span className="font-medium">Token Type:</span> Bearer
@@ -173,7 +173,13 @@ export default function AdminDebug() {
                 聯絡我們
               </Button>
             </Link>
-            <Button variant="destructive" className="w-full">
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={() => {
+                void logout().then(() => window.location.assign("/admin/login"));
+              }}
+            >
               登出
             </Button>
           </div>

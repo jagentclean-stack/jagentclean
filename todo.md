@@ -78,5 +78,11 @@
 - [x] Header 登入/登出按鈕
 - [x] RBAC 權限系統實現
 - [x] Debug 頁面（/admin/debug）
-- [ ] CMS 後台權限檢查
+- [x] CMS 後台權限檢查
 - [ ] 前台內容權限控制
+
+## CMS 後台恢復
+- [x] 盤點並恢復 CMS Dashboard、管理頁面與路由
+- [x] 建立受保護的管理員登入與登出流程
+- [x] 驗證管理員權限與 CMS 存取控制
+- [x] 測試 Dashboard 與內容管理主要流程

@@ -8,7 +8,7 @@ import { Loader2, BarChart3, Package, FileText, Calendar, Mail, Image as ImageIc
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
 export default function CMSDashboard() {
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
   const isAdmin = user?.role === "admin" || (user?.email && ADMIN_EMAILS.includes(user.email));
   const { data: dashboardData, isLoading } = trpc.cms.dashboard.useQuery(undefined, {
     enabled: isAuthenticated && !!isAdmin,
@@ -28,9 +28,14 @@ export default function CMSDashboard() {
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">無法存取</h1>
           <p className="text-gray-600 mb-6">您沒有權限存取 CMS 後台。</p>
-          <Link href="/">
-            <Button>返回首頁</Button>
-          </Link>
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link href="/admin/login">
+              <Button>管理員登入</Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline">返回首頁</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -40,9 +45,19 @@ export default function CMSDashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">CMS 後台管理</h1>
-          <p className="text-gray-600 mt-2">歡迎，{user?.name || "管理員"}！</p>
+        <div className="max-w-7xl mx-auto flex flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">CMS 後台管理</h1>
+            <p className="mt-2 text-gray-600">歡迎，{user?.name || "管理員"}！</p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              void logout().then(() => window.location.assign("/admin/login"));
+            }}
+          >
+            登出
+          </Button>
         </div>
       </div>
 

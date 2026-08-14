@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Header from "./components/Header";
@@ -15,6 +15,23 @@ import Process from "./pages/Process";
 import Testimonials from "./pages/Testimonials";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDebug from "./pages/AdminDebug";
+import CMSDashboard from "./pages/CMSDashboard";
+import CMSPages from "./pages/CMSPages";
+import CMSServices from "./pages/CMSServices";
+import CMSCases from "./pages/CMSCases";
+import CMSBlogs from "./pages/CMSBlogs";
+import CMSBookings from "./pages/CMSBookings";
+import CMSContacts from "./pages/CMSContacts";
+import CMSMedia from "./pages/CMSMedia";
+import CMSSettings from "./pages/CMSSettings";
+import CMSSEO from "./pages/CMSSEO";
+import CMSMenus from "./pages/CMSMenus";
+import CMSFAQs from "./pages/CMSFAQs";
+import CMSHero from "./pages/CMSHero";
+import CMSFooter from "./pages/CMSFooter";
+import CMSReviews from "./pages/CMSReviews";
 
 import FloatingContactMenu from "@/components/FloatingContactMenu";
 
@@ -30,6 +47,24 @@ function Router() {
         <Route path={"/faq"} component={FAQ} />
         <Route path={"/contact"} component={Contact} />
 
+        <Route path={"/admin/login"} component={AdminLogin} />
+        <Route path={"/admin/debug"} component={AdminDebug} />
+        <Route path={"/cms"} component={CMSDashboard} />
+        <Route path={"/cms/pages"} component={CMSPages} />
+        <Route path={"/cms/services"} component={CMSServices} />
+        <Route path={"/cms/cases"} component={CMSCases} />
+        <Route path={"/cms/blogs"} component={CMSBlogs} />
+        <Route path={"/cms/bookings"} component={CMSBookings} />
+        <Route path={"/cms/contacts"} component={CMSContacts} />
+        <Route path={"/cms/media"} component={CMSMedia} />
+        <Route path={"/cms/settings"} component={CMSSettings} />
+        <Route path={"/cms/seo"} component={CMSSEO} />
+        <Route path={"/cms/menus"} component={CMSMenus} />
+        <Route path={"/cms/faqs"} component={CMSFAQs} />
+        <Route path={"/cms/hero"} component={CMSHero} />
+        <Route path={"/cms/footer"} component={CMSFooter} />
+        <Route path={"/cms/reviews"} component={CMSReviews} />
+
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
@@ -43,6 +78,9 @@ function Router() {
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
+  const [location] = useLocation();
+  const isAdminArea = location === "/admin/login" || location === "/admin/debug" || location.startsWith("/cms");
+
   return (
     <ErrorBoundary>
       <ThemeProvider
@@ -51,15 +89,15 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          <FloatingButtons />
-          <AIChatAdvisor />
-          <FloatingContactMenu />
+          {!isAdminArea && <FloatingButtons />}
+          {!isAdminArea && <AIChatAdvisor />}
+          {!isAdminArea && <FloatingContactMenu />}
           <div className="min-h-screen flex flex-col">
-            <Header />
+            {!isAdminArea && <Header />}
             <main className="flex-grow">
               <Router />
             </main>
-            <Footer />
+            {!isAdminArea && <Footer />}
           </div>
         </TooltipProvider>
       </ThemeProvider>
