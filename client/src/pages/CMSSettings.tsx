@@ -8,13 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Save } from "lucide-react";
 
+const CMS_SETTING_KEYS = ["site_name", "site_description", "company_phone", "company_email", "line_id", "company_address", "facebook_url", "instagram_url", "ga_id", "meta_pixel_id", "google_map_embed", "copyright_text"] as const;
+const ADMIN_EMAILS = new Set(["jagentclean@gmail.com", "emilyku0jj@gmail.com"]);
+
 export default function CMSSettings() {
   const { user, isAuthenticated } = useAuth();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const canManageSettings = isAuthenticated && (user?.role === "admin" || ADMIN_EMAILS.has(user?.email ?? ""));
 
   const { data: settingsData, isLoading } = trpc.cms.settings.list.useQuery(undefined, {
-    enabled: isAuthenticated && user?.role === "admin",
+    enabled: canManageSettings,
   });
 
   // Update settings when data is loaded
@@ -28,7 +32,7 @@ export default function CMSSettings() {
     }
   }, [settingsData]);
 
-  const updateMutation = trpc.cms.settings.update.useMutation({
+  const updateMutation = trpc.cms.settings.updateBatch.useMutation({
     onSuccess: () => {
       setIsSaving(false);
     },
@@ -43,12 +47,16 @@ export default function CMSSettings() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    for (const [key, value] of Object.entries(settings)) {
-      await updateMutation.mutateAsync({ key, value });
+    try {
+      await updateMutation.mutateAsync({
+        settings: Object.fromEntries(CMS_SETTING_KEYS.map((key) => [key, settings[key] ?? ""])) as Record<(typeof CMS_SETTING_KEYS)[number], string>,
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (!canManageSettings) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-gray-600">無法存取此頁面</p>

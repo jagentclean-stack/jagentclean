@@ -11,6 +11,9 @@ type AllowedRoles = "admin" | "manager" | "customer_service" | "marketing" | "ed
 // 管理員 email 白名單
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
+const CMS_SETTING_KEYS = ["site_name", "site_description", "company_phone", "company_email", "line_id", "company_address", "facebook_url", "instagram_url", "ga_id", "meta_pixel_id", "google_map_embed", "copyright_text"] as const;
+const cmsSettingKeySchema = z.enum(CMS_SETTING_KEYS);
+
 const checkRole = (userRole: string | undefined | null, userEmailOrFirstRole: string | undefined | null, ...allowedRoles: AllowedRoles[]): boolean => {
   const userEmail = userEmailOrFirstRole?.includes("@") ? userEmailOrFirstRole : null;
   const resolvedRoles = userEmail ? allowedRoles : [userEmailOrFirstRole, ...allowedRoles];
@@ -421,12 +424,21 @@ export const cmsRouter = router({
       }),
 
     update: protectedProcedure
-      .input(z.object({ key: z.string(), value: z.string() }))
+      .input(z.object({ key: cmsSettingKeySchema, value: z.string().max(10_000) }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
           throw new Error("Unauthorized");
         }
         return db.updateSetting(input.key, input.value);
+      }),
+    updateBatch: protectedProcedure
+      .input(z.object({ settings: z.record(cmsSettingKeySchema, z.string().max(10_000)) }))
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+          throw new Error("Unauthorized");
+        }
+        await Promise.all(Object.entries(input.settings).map(([key, value]) => db.updateSetting(key, value)));
+        return { success: true, updatedKeys: Object.keys(input.settings) };
       }),
   }),
 
