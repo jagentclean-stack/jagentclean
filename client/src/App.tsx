@@ -6,7 +6,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import FloatingButtons from "./components/FloatingButtons";
 import AIChatAdvisor from "./components/AIChatAdvisor";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -98,7 +97,6 @@ function App() {
       >
         <TooltipProvider>
           <Toaster />
-          {!isAdminArea && <FloatingButtons />}
           {!isAdminArea && <AIChatAdvisor />}
           {!isAdminArea && <FloatingContactMenu />}
           {!isAdminArea && <SEOHead pathname={location} />}

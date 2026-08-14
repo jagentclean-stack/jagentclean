@@ -36,6 +36,7 @@ import CMSSettings from "./CMSSettings";
 afterEach(() => {
   cleanup();
   testState.shouldReject = false;
+  testState.settingsData = [{ key: "site_name", value: "原網站名稱" }];
 });
 
 describe("CMSSettings 批次儲存回饋", () => {
@@ -53,5 +54,17 @@ describe("CMSSettings 批次儲存回饋", () => {
     fireEvent.click(screen.getByRole("button", { name: "保存設定" }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("設定格式無效"));
     expect((siteNameInput as HTMLInputElement).value).toBe("新名稱");
+  });
+
+  it("讀取並可編輯 Logo 圖片網址", () => {
+    testState.settingsData = [
+      { key: "site_name", value: "原網站名稱" },
+      { key: "logo_url", value: "/manus-storage/custom-logo.png" },
+    ];
+    render(<CMSSettings />);
+    const logoInput = screen.getByPlaceholderText("/manus-storage/your-logo.png") as HTMLInputElement;
+    expect(logoInput.value).toBe("/manus-storage/custom-logo.png");
+    fireEvent.change(logoInput, { target: { value: "https://cdn.example.com/logo.png" } });
+    expect(logoInput.value).toBe("https://cdn.example.com/logo.png");
   });
 });

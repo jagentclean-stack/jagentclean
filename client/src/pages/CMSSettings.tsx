@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Save } from "lucide-react";
 
-const CMS_SETTING_KEYS = ["site_name", "site_description", "company_phone", "company_email", "line_id", "company_address", "facebook_url", "instagram_url", "ga_id", "meta_pixel_id", "google_map_embed", "copyright_text"] as const;
+const CMS_SETTING_KEYS = ["site_name", "site_description", "logo_url", "contact_image_url", "company_phone", "company_fax", "company_email", "line_id", "line_url", "company_address", "facebook_url", "instagram_url", "google_map_embed", "google_map_url", "ga_id", "meta_pixel_id", "copyright_text"] as const;
 const ADMIN_EMAILS = new Set(["jagentclean@gmail.com", "emilyku0jj@gmail.com"]);
 
 export default function CMSSettings() {
@@ -123,6 +123,30 @@ export default function CMSSettings() {
                     placeholder="網站的簡短描述..."
                     rows={3}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Logo 圖片網址
+                  </label>
+                  <Input
+                    type="url"
+                    value={settings["logo_url"] || ""}
+                    onChange={(e) => handleInputChange("logo_url", e.target.value)}
+                    placeholder="/manus-storage/your-logo.png"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">請從媒體中心複製圖片網址。留空時將使用現有品牌 Logo。</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    聯繫頁形象圖片網址
+                  </label>
+                  <Input
+                    type="url"
+                    value={settings["contact_image_url"] || ""}
+                    onChange={(e) => handleInputChange("contact_image_url", e.target.value)}
+                    placeholder="/manus-storage/contact-team.webp"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">選填。留空或圖片無法載入時，聯繫頁會自動採用雙欄版面。</p>
                 </div>
               </div>
             </Card>

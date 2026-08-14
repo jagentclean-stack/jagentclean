@@ -55,3 +55,19 @@ The media center now imports its React hooks safely at runtime, supports keyword
 ## 2026-08-14 — Media metadata and tags
 
 Media records can now be renamed and have their category, alternative text, and tags updated through a protected editor. Tag input is normalized into at most twenty unique values, tag badges are visible in the library, and search includes tags in addition to filename, category, and alternative text. Tests cover a complete metadata update; the full suite passes 28 files / 69 tests and production build succeeds.
+
+## 2026-08-14 — Contact management scope
+
+The public contact experience deliberately routes prospective customers to the official LINE account rather than collecting a website contact form. Accordingly, CMS contacts remains an operational inbox for legacy or administrative records: staff can review details and mark records as read, but no public-facing email reply channel is offered. This avoids falsely implying that an inbound form or SMTP reply workflow is active.
+
+## 2026-08-14 — Site Logo setting
+
+`logo_url` is now a strictly validated CMS setting and is exposed only through the public `siteSettings` DTO alongside the site name. The Header uses that setting when supplied and otherwise preserves the current brand asset. The settings page renders the media-center URL input and its test verifies existing Logo values can be read and edited. SSR rendering, all 28 test files / 71 tests, and the production build pass.
+
+## 2026-08-14 — Contact image fallback
+
+The public contact page now takes an optional `contact_image_url` from the safe public settings DTO. It renders the media column only when the URL is present and removes it if the image emits an error, leaving the LINE consultation CTA intact rather than a blank visual block. The 29-file / 73-test suite and production build pass.
+
+## 2026-08-14 — Contact visual fallback
+
+The contact page now preserves its three-column balance when `contact_image_url` is absent or when the image fails to load. Instead of leaving a blank media region, it shows a deep-blue J-Agent Cleaning brand card with lime-green security icon and reassurance copy. Tests cover both missing-URL and failed-image cases, and the full suite passes 29 files / 73 tests with a successful production build.

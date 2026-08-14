@@ -13,6 +13,7 @@ vi.mock("@/lib/trpc", () => ({
     cms: {
       publicContent: {
         menus: { useQuery: () => ({ data: [{ id: 1, label: "服務項目", url: "/services", openNewWindow: false, children: [] }] }) },
+        siteSettings: { useQuery: () => ({ data: { siteName: "J-Agent Cleaning", logoUrl: null } }) },
         footer: { useQuery: () => ({ data: { aboutText: "專業清潔服務", quickLinks: [], socialLinks: {}, copyrightText: "© J-Agent" } }) },
         seo: { useQuery: () => ({ data: null }) },
         faqs: { useQuery: () => ({ data: [] }) },

@@ -13,7 +13,7 @@ type AllowedRoles = "super_admin" | "admin" | "manager" | "customer_service" | "
 // 管理員 email 白名單
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
-const CMS_SETTING_KEYS = ["site_name", "site_description", "company_phone", "company_email", "line_id", "company_address", "facebook_url", "instagram_url", "ga_id", "meta_pixel_id", "google_map_embed", "copyright_text"] as const;
+const CMS_SETTING_KEYS = ["site_name", "site_description", "logo_url", "contact_image_url", "company_phone", "company_fax", "company_email", "line_id", "line_url", "company_address", "facebook_url", "instagram_url", "google_map_embed", "google_map_url", "ga_id", "meta_pixel_id", "copyright_text"] as const;
 export const cmsSettingKeySchema = z.enum(CMS_SETTING_KEYS);
 
 export function filterCmsSettingsForClient<T extends { key: string }>(items: T[]) {
@@ -21,9 +21,10 @@ export function filterCmsSettingsForClient<T extends { key: string }>(items: T[]
 }
 
 export function validateCmsSettingValue(key: z.infer<typeof cmsSettingKeySchema>, value: string) {
+  if (["logo_url", "contact_image_url"].includes(key) && value && !(/^(?:\/manus-storage\/)[A-Za-z0-9._-]+$/.test(value) || z.string().url().safeParse(value).success)) throw new Error("圖片 URL 格式不正確");
   if (key === "company_phone" && value && !/^[0-9+()\-\s]{6,30}$/.test(value)) throw new Error("公司電話格式不正確");
   if (key === "company_email" && value && !z.string().email().safeParse(value).success) throw new Error("公司 Email 格式不正確");
-  if (["facebook_url", "instagram_url"].includes(key) && value && !z.string().url().safeParse(value).success) throw new Error("社群連結格式不正確");
+  if (["line_url", "facebook_url", "instagram_url", "google_map_embed", "google_map_url"].includes(key) && value && !z.string().url().safeParse(value).success) throw new Error("連結格式不正確");
   if (key === "ga_id" && value && !/^G-[A-Z0-9]{4,32}$/i.test(value)) throw new Error("Google Analytics ID 格式不正確");
   if (key === "meta_pixel_id" && value && !/^\d{5,20}$/.test(value)) throw new Error("Meta Pixel ID 格式不正確");
 }
@@ -90,6 +91,31 @@ export const cmsRouter = router({
     faqs: publicProcedure.query(() => db.getVisibleFAQs()),
     footer: publicProcedure.query(() => db.getPublishedFooter()),
     menus: publicProcedure.query(() => db.getPublicMenuTree()),
+    siteSettings: publicProcedure.query(async () => {
+      const settings = filterCmsSettingsForClient(await db.getSettingsByKeys([
+        "site_name", "site_description", "logo_url", "contact_image_url", "company_phone", "company_fax", "company_email",
+        "line_id", "line_url", "company_address", "facebook_url", "instagram_url", "google_map_embed",
+        "google_map_url", "copyright_text",
+      ]));
+      const values = Object.fromEntries(settings.map((setting) => [setting.key, setting.value || ""]));
+      return {
+        siteName: values.site_name || "J-Agent Cleaning",
+        siteDescription: values.site_description || "",
+        logoUrl: values.logo_url || null,
+        contactImageUrl: values.contact_image_url || null,
+        companyPhone: values.company_phone || "",
+        companyFax: values.company_fax || "",
+        companyEmail: values.company_email || "",
+        lineId: values.line_id || "",
+        lineUrl: values.line_url || "",
+        companyAddress: values.company_address || "",
+        facebookUrl: values.facebook_url || "",
+        instagramUrl: values.instagram_url || "",
+        googleMapEmbed: values.google_map_embed || "",
+        googleMapUrl: values.google_map_url || "",
+        copyrightText: values.copyright_text || "",
+      };
+    }),
     seo: publicProcedure
       .input(z.object({ slug: z.string().trim().min(1).max(255) }))
       .query(({ input }) => db.getSEOBySlug(input.slug)),
