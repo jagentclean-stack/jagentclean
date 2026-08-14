@@ -1,6 +1,8 @@
 import { z } from "zod";
 import * as db from "./db";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { storagePut } from "./storage";
+import { decodeMediaUpload, mediaStorageFilename } from "./mediaUpload";
 
 // Type assertion helper for role checking
 type AllowedRoles = "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
@@ -23,6 +25,28 @@ const checkRole = (userRole: string | undefined | null, userEmailOrFirstRole: st
  * 處理所有後台管理功能
  */
 export const cmsRouter = router({
+  /** 前台可安全讀取的已發布內容，不含草稿或內部資料。 */
+  publicContent: router({
+    homepage: publicProcedure.query(async () => {
+      const [heroes, services, faqs, reviews, footerContent] = await Promise.all([
+        db.getPublishedHeroes(),
+        db.getPublishedServices(),
+        db.getVisibleFAQs(),
+        db.getPublishedHomepageReviews(),
+        db.getPublishedFooter(),
+      ]);
+
+      return {
+        hero: heroes[0] ?? null,
+        services,
+        faqs,
+        reviews,
+        footer: footerContent,
+      };
+    }),
+    services: publicProcedure.query(() => db.getPublishedServices()),
+  }),
+
   /**
    * Dashboard 統計資訊
    */
@@ -316,6 +340,42 @@ export const cmsRouter = router({
           ...input,
           uploadedBy: ctx.user?.id,
         });
+      }),
+
+    upload: protectedProcedure
+      .input(
+        z.object({
+          filename: z.string().trim().min(1).max(255),
+          dataUrl: z.string().min(1).max(29_000_000),
+          mimeType: z.string().trim().min(1).max(64),
+          category: z.string().trim().max(255).optional(),
+          alt: z.string().trim().max(500).optional(),
+          tags: z.array(z.string().trim().min(1).max(100)).max(20).optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+          throw new Error("Unauthorized");
+        }
+
+        const uploaded = decodeMediaUpload(input.dataUrl, input.mimeType);
+        const filename = mediaStorageFilename(input.filename, uploaded.mimeType);
+        const storagePath = `cms-media/${ctx.user?.id ?? "system"}/${Date.now()}-${filename}`;
+        const { url } = await storagePut(storagePath, uploaded.bytes, uploaded.mimeType);
+
+        await db.createMedia({
+          filename,
+          url,
+          type: uploaded.type,
+          mimeType: uploaded.mimeType,
+          size: uploaded.bytes.length,
+          category: input.category || null,
+          alt: input.alt || null,
+          tags: input.tags ?? null,
+          uploadedBy: ctx.user?.id,
+        });
+
+        return { url, filename, type: uploaded.type, mimeType: uploaded.mimeType, size: uploaded.bytes.length };
       }),
 
     delete: protectedProcedure

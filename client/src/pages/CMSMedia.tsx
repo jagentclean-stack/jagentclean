@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,27 +6,43 @@ import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { Loader2, Plus, Trash2, Copy, Image as ImageIcon, Video } from "lucide-react";
 
+const ALLOWED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm"];
+const MAX_MEDIA_BYTES = 20 * 1024 * 1024;
+
 export default function CMSMedia() {
   const { user, isAuthenticated } = useAuth();
   const [category, setCategory] = useState("all");
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadCategory, setUploadCategory] = useState("");
+  const [uploadAlt, setUploadAlt] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: media, isLoading, refetch } = trpc.cms.media.list.useQuery(undefined, {
     enabled: isAuthenticated && ["admin", "editor"].includes(user?.role || ""),
   });
 
   const deleteMutation = trpc.cms.media.delete.useMutation({
+    onSuccess: () => refetch(),
+  });
+
+  const uploadMutation = trpc.cms.media.upload.useMutation({
     onSuccess: () => {
+      setSelectedFile(null);
+      setUploadCategory("");
+      setUploadAlt("");
+      setUploadError("");
+      setIsUploadOpen(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       refetch();
     },
+    onError: (error) => setUploadError(error.message || "上傳失敗，請稍後再試。"),
   });
 
-  const filteredMedia = media?.filter((item) => {
-    if (category === "all") return true;
-    return item.category === category;
-  });
-
-  const categories = Array.from(new Set(media?.map((m) => m.category).filter(Boolean))) as string[];
+  const filteredMedia = media?.filter((item) => category === "all" || item.category === category);
+  const categories = Array.from(new Set(media?.map((item) => item.category).filter(Boolean))) as string[];
 
   const handleCopyUrl = (url: string, id: number) => {
     navigator.clipboard.writeText(url);
@@ -34,9 +50,58 @@ export default function CMSMedia() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setUploadError("");
+    if (!file) return;
+
+    if (!ALLOWED_MEDIA_TYPES.includes(file.type)) {
+      setSelectedFile(null);
+      setUploadError("僅支援 JPG、PNG、WebP、GIF、MP4 與 WebM 檔案。");
+      return;
+    }
+    if (file.size > MAX_MEDIA_BYTES) {
+      setSelectedFile(null);
+      setUploadError("檔案不得超過 20 MB。");
+      return;
+    }
+    setSelectedFile(file);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setUploadError("請先選擇要上傳的檔案。");
+      return;
+    }
+
+    try {
+      setUploadError("");
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("無法讀取選取的檔案。"));
+        reader.readAsDataURL(selectedFile);
+      });
+      await uploadMutation.mutateAsync({
+        filename: selectedFile.name,
+        dataUrl,
+        mimeType: selectedFile.type,
+        category: uploadCategory.trim() || undefined,
+        alt: uploadAlt.trim() || undefined,
+      });
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "上傳失敗，請稍後再試。");
+    }
+  };
+
+  const closeUploadPanel = () => {
+    setIsUploadOpen(false);
+    setUploadError("");
+  };
+
   if (!isAuthenticated || !["admin", "editor"].includes(user?.role || "")) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <p className="text-gray-600">無法存取此頁面</p>
       </div>
     );
@@ -44,114 +109,84 @@ export default function CMSMedia() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
+      <div className="border-b border-gray-200 bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-6 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">媒體中心</h1>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button onClick={() => setIsUploadOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
             上傳媒體
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {isUploadOpen && (
+        <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+          <Card className="border-blue-100 p-5 shadow-sm">
+            <div className="flex flex-col gap-5 md:flex-row md:items-end">
+              <div className="flex-1 space-y-2">
+                <label className="text-sm font-medium text-gray-800" htmlFor="media-file">檔案</label>
+                <Input ref={fileInputRef} id="media-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm" onChange={handleFileChange} disabled={uploadMutation.isPending} />
+                <p className="text-xs text-gray-500">支援 JPG、PNG、WebP、GIF、MP4、WebM，單檔上限 20 MB。</p>
+              </div>
+              <div className="flex-1 space-y-2">
+                <label className="text-sm font-medium text-gray-800" htmlFor="media-category">分類</label>
+                <Input id="media-category" value={uploadCategory} onChange={(event) => setUploadCategory(event.target.value)} placeholder="例如：首頁、案例、服務" disabled={uploadMutation.isPending} />
+              </div>
+              <div className="flex-1 space-y-2">
+                <label className="text-sm font-medium text-gray-800" htmlFor="media-alt">替代文字</label>
+                <Input id="media-alt" value={uploadAlt} onChange={(event) => setUploadAlt(event.target.value)} placeholder="說明圖片內容，提升無障礙與 SEO" disabled={uploadMutation.isPending} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={closeUploadPanel} disabled={uploadMutation.isPending}>取消</Button>
+                <Button onClick={handleUpload} disabled={!selectedFile || uploadMutation.isPending}>
+                  {uploadMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                  {uploadMutation.isPending ? "上傳中" : "開始上傳"}
+                </Button>
+              </div>
+            </div>
+            {selectedFile && <p className="mt-4 text-sm text-gray-600">已選取：{selectedFile.name}（{Math.ceil(selectedFile.size / 1024)} KB）</p>}
+            {uploadError && <p role="alert" className="mt-4 text-sm font-medium text-red-600">{uploadError}</p>}
+          </Card>
+        </div>
+      )}
+
+      <div className="mt-6 border-y border-gray-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            <button
-              onClick={() => setCategory("all")}
-              className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium ${
-                category === "all"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-              }`}
-            >
-              全部 ({media?.length || 0})
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat || "all")}
-                className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium ${
-                  category === cat
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                }`}
-              >
-                {cat} ({media?.filter((m) => m.category === cat).length || 0})
+            <button onClick={() => setCategory("all")} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${category === "all" ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}>全部 ({media?.length || 0})</button>
+            {categories.map((itemCategory) => (
+              <button key={itemCategory} onClick={() => setCategory(itemCategory)} className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium ${category === itemCategory ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}>
+                {itemCategory} ({media?.filter((item) => item.category === itemCategory).length || 0})
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="animate-spin w-8 h-8" />
-          </div>
+          <div className="flex items-center justify-center py-12"><Loader2 className="h-8 w-8 animate-spin" /></div>
         ) : filteredMedia && filteredMedia.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredMedia.map((item) => (
-              <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {/* Thumbnail */}
-                <div className="aspect-video bg-gray-100 flex items-center justify-center overflow-hidden">
-                  {item.type === "image" ? (
-                    <img
-                      src={item.url}
-                      alt={item.alt || item.filename}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-gray-400">
-                      <Video className="w-12 h-12 mb-2" />
-                      <span className="text-sm">影片</span>
-                    </div>
-                  )}
+              <Card key={item.id} className="overflow-hidden transition-shadow hover:shadow-lg">
+                <div className="flex aspect-video items-center justify-center overflow-hidden bg-gray-100">
+                  {item.type === "image" ? <img src={item.url} alt={item.alt || item.filename} className="h-full w-full object-cover" /> : <div className="flex flex-col items-center justify-center text-gray-400"><Video className="mb-2 h-12 w-12" /><span className="text-sm">影片</span></div>}
                 </div>
-
-                {/* Info */}
                 <div className="p-4">
-                  <h3 className="font-medium text-gray-900 truncate">{item.filename}</h3>
-                  {item.category && (
-                    <p className="text-xs text-gray-500 mt-1">{item.category}</p>
-                  )}
-                  {item.alt && (
-                    <p className="text-xs text-gray-600 mt-2 line-clamp-2">{item.alt}</p>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => handleCopyUrl(item.url, item.id)}
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      {copiedId === item.id ? "已複製" : "複製"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 hover:text-red-700"
-                      onClick={() => deleteMutation.mutate({ id: item.id })}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                  <h3 className="truncate font-medium text-gray-900">{item.filename}</h3>
+                  {item.category && <p className="mt-1 text-xs text-gray-500">{item.category}</p>}
+                  {item.alt && <p className="mt-2 line-clamp-2 text-xs text-gray-600">{item.alt}</p>}
+                  <div className="mt-4 flex gap-2">
+                    <Button size="sm" variant="outline" className="flex-1" onClick={() => handleCopyUrl(item.url, item.id)}><Copy className="mr-1 h-4 w-4" />{copiedId === item.id ? "已複製" : "複製"}</Button>
+                    <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => deleteMutation.mutate({ id: item.id })} disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
                   </div>
                 </div>
               </Card>
             ))}
           </div>
         ) : (
-          <Card className="p-12 text-center">
-            <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">無媒體檔案</p>
-          </Card>
+          <Card className="p-12 text-center"><ImageIcon className="mx-auto mb-4 h-12 w-12 text-gray-300" /><p className="text-gray-600">無媒體檔案</p></Card>
         )}
       </div>
     </div>

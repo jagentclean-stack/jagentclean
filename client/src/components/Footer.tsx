@@ -8,11 +8,9 @@ export default function Footer() {
       <div className="container mx-auto px-4 lg:px-8 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {/* Brand Info */}
         <div className="space-y-4">
-          <Link href="/">
-            <a className="flex items-center space-x-2">
-              <img src="/manus-storage/brand-logo_0f07bc46.png" alt="J-Agent Cleaning Logo" className="h-8" />
-              <span className="text-xl font-bold">潔特務清潔</span>
-            </a>
+          <Link href="/" className="flex items-center space-x-2">
+            <img src="/manus-storage/brand-logo_0f07bc46.png" alt="J-Agent Cleaning Logo" className="h-8" />
+            <span className="text-xl font-bold">潔特務清潔</span>
           </Link>
           <p className="text-sm leading-relaxed">
             提供專業、高品質、高信任感、高效率的企業級清潔服務，為您的空間帶來潔淨與舒適。
@@ -32,29 +30,19 @@ export default function Footer() {
           <h3 className="text-lg font-semibold mb-2">快速連結</h3>
           <ul className="space-y-2">
             <li>
-              <Link href="/services">
-                <a className="hover:text-secondary transition-colors duration-200">服務項目</a>
-              </Link>
+              <Link href="/services" className="hover:text-secondary transition-colors duration-200">服務項目</Link>
             </li>
             <li>
-              <Link href="/about">
-                <a className="hover:text-secondary transition-colors duration-200">關於我們</a>
-              </Link>
+              <Link href="/about" className="hover:text-secondary transition-colors duration-200">關於我們</Link>
             </li>
             <li>
-              <Link href="/process">
-                <a className="hover:text-secondary transition-colors duration-200">清潔流程</a>
-              </Link>
+              <Link href="/process" className="hover:text-secondary transition-colors duration-200">清潔流程</Link>
             </li>
             <li>
-              <Link href="/testimonials">
-                <a className="hover:text-secondary transition-colors duration-200">客戶評價</a>
-              </Link>
+              <Link href="/testimonials" className="hover:text-secondary transition-colors duration-200">客戶評價</Link>
             </li>
             <li>
-              <Link href="/faq">
-                <a className="hover:text-secondary transition-colors duration-200">常見問題</a>
-              </Link>
+              <Link href="/faq" className="hover:text-secondary transition-colors duration-200">常見問題</Link>
             </li>
           </ul>
         </div>

@@ -5,17 +5,82 @@ import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
+/**
+ * TiDB 的資料庫名稱會保留大小寫；而部分執行環境提供的 DATABASE_URL
+ * 會將專案 ID 小寫化。若兩者僅大小寫不同，改用 VITE_APP_ID 的原始大小寫
+ * 以連至本專案實際建立 CMS 資料表的資料庫。
+ */
+export function getApplicationDatabaseUrl(
+  databaseUrl = process.env.DATABASE_URL ?? "",
+  appId = process.env.VITE_APP_ID ?? "",
+) {
+  if (!databaseUrl || !appId) return databaseUrl;
+
+  try {
+    const parsedUrl = new URL(databaseUrl);
+    const databaseName = parsedUrl.pathname.replace(/^\//, "");
+
+    if (
+      databaseName !== appId &&
+      databaseName.toLowerCase() === appId.toLowerCase()
+    ) {
+      parsedUrl.pathname = `/${appId}`;
+      return parsedUrl.toString();
+    }
+  } catch {
+    // 非標準連線字串交由 Drizzle 使用原始值處理。
+  }
+
+  return databaseUrl;
+}
+
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _db = drizzle(getApplicationDatabaseUrl(process.env.DATABASE_URL));
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
     }
   }
   return _db;
+}
+
+/** 僅供公開網站使用：所有回傳內容皆已發布或可公開顯示。 */
+export async function getPublishedServices() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(services).where(eq(services.isPublished, true)).orderBy(asc(services.order));
+}
+
+export async function getVisibleFAQs() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(faqs).where(eq(faqs.isVisible, true)).orderBy(asc(faqs.order));
+}
+
+export async function getPublishedHomepageReviews() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(reviews)
+    .where(and(eq(reviews.isPublished, true), eq(reviews.isHomepageDisplay, true)))
+    .orderBy(desc(reviews.createdAt));
+}
+
+export async function getPublishedHeroes() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(hero).where(eq(hero.isPublished, true)).orderBy(asc(hero.order));
+}
+
+export async function getPublishedFooter() {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(footer).where(eq(footer.isPublished, true)).limit(1);
+  return results[0] ?? null;
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

@@ -1,4 +1,3 @@
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import ServiceCard from "@/components/ServiceCard";
@@ -9,9 +8,15 @@ import TestimonialCard from "@/components/TestimonialCard";
 import FAQItem from "@/components/FAQItem";
 import { Accordion } from "@/components/ui/accordion";
 import CTASection from "@/components/CTASection";
+import { trpc } from "@/lib/trpc";
 
 export default function Home() {
-  let { user, loading, error, isAuthenticated, logout } = useAuth();
+  const { data: homepageContent } = trpc.cms.publicContent.homepage.useQuery();
+  const hero = homepageContent?.hero;
+  const services = homepageContent?.services ?? [];
+  const reviews = homepageContent?.reviews ?? [];
+  const faqs = homepageContent?.faqs ?? [];
+  const serviceIcons = [Briefcase, ShieldCheck, Zap];
 
   return (
     <div className="relative w-full overflow-hidden">
@@ -21,7 +26,7 @@ export default function Home() {
         <div
           className="absolute inset-0 bg-cover bg-center transition-transform duration-500 ease-out"
           style={{
-            backgroundImage: `url(/manus-storage/hero-background_f0e461b3.png)`,
+            backgroundImage: `url(${hero?.backgroundImage || "/manus-storage/hero-background_f0e461b3.png"})`,
             backgroundAttachment: 'fixed',
             transform: 'translateY(var(--parallax-offset, 0px))'
           }}
@@ -44,7 +49,7 @@ export default function Home() {
                   fontWeight: '700'
                 }}
               >
-                潔特務清潔：專業、高效、<br />值得信賴的企業級清潔服務
+                {hero?.title || <>潔特務清潔：專業、高效、<br />值得信賴的企業級清潔服務</>}
               </h1>
             </AnimatedSection>
 
@@ -58,7 +63,7 @@ export default function Home() {
                   marginBottom: '32px'
                 }}
               >
-                我們提供世界級的清潔解決方案，為您的企業打造一塵不染的專業環境。
+                {hero?.subtitle || "我們提供世界級的清潔解決方案，為您的企業打造一塵不染的專業環境。"}
               </p>
             </AnimatedSection>
 
@@ -68,7 +73,7 @@ export default function Home() {
                 className="flex flex-col sm:flex-row justify-center items-center"
                 style={{ gap: '20px', marginBottom: '40px' }}
               >
-                <a href="/contact">
+                <a href={hero?.ctaLink || "/contact"}>
                   <Button 
                     className="soft-shadow hover:scale-105 transition-transform duration-300 rounded-full"
                     style={{
@@ -84,7 +89,7 @@ export default function Home() {
                       color: '#ffffff'
                     }}
                   >
-                    📅 立即預約免費諮詢
+                    {hero?.ctaText || "📅 立即預約免費諮詢"}
                   </Button>
                 </a>
                 <a href="https://lin.ee/ynvoHjh" target="_blank" rel="noopener noreferrer">
@@ -187,27 +192,15 @@ export default function Home() {
             </h2>
           </AnimatedSection>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <AnimatedSection delay={0}>
-              <ServiceCard
-                icon={Briefcase}
-                title="企業級清潔"
-                description="針對辦公室、商業空間提供客製化清潔方案，確保環境專業整潔。"
-              />
-            </AnimatedSection>
-            <AnimatedSection delay={100}>
-              <ServiceCard
-                icon={ShieldCheck}
-                title="高品質保證"
-                description="嚴選環保清潔劑與專業設備，提供業界最高標準的清潔品質。"
-              />
-            </AnimatedSection>
-            <AnimatedSection delay={200}>
-              <ServiceCard
-                icon={Zap}
-                title="高效率團隊"
-                description="訓練有素的清潔特務，以最快速度完成任務，不影響您的日常運作。"
-              />
-            </AnimatedSection>
+            {services.slice(0, 3).map((service, index) => (
+              <AnimatedSection key={service.id} delay={index * 100}>
+                <ServiceCard
+                  icon={serviceIcons[index % serviceIcons.length]}
+                  title={service.name}
+                  description={service.description || ""}
+                />
+              </AnimatedSection>
+            ))}
           </div>
         </div>
       </section>
@@ -295,75 +288,56 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="relative z-10 w-full bg-muted" style={{ paddingTop: '80px', paddingBottom: '80px' }}>
-        <div className="w-full px-6 lg:px-8" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <AnimatedSection>
-            <h2 className="text-4xl font-bold text-center text-primary mb-24" style={{ marginBottom: '72px' }}>
-              客戶怎麼說
-            </h2>
-          </AnimatedSection>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-            <AnimatedSection delay={0}>
-              <TestimonialCard
-                name="王先生"
-                title="科技公司 CEO"
-                quote="潔特務清潔的服務非常專業，讓我們的辦公室煥然一新，員工工作效率都提高了！"
-              />
+      {reviews.length > 0 && (
+        <section className="relative z-10 w-full bg-muted" style={{ paddingTop: '80px', paddingBottom: '80px' }}>
+          <div className="w-full px-6 lg:px-8" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+            <AnimatedSection>
+              <h2 className="text-4xl font-bold text-center text-primary mb-24" style={{ marginBottom: '72px' }}>
+                客戶怎麼說
+              </h2>
             </AnimatedSection>
-            <AnimatedSection delay={100}>
-              <TestimonialCard
-                name="陳小姐"
-                title="連鎖咖啡店經理"
-                quote="他們的團隊效率極高，清潔細緻入微，完全符合我們對高品質的要求。"
-              />
-            </AnimatedSection>
-            <AnimatedSection delay={200}>
-              <TestimonialCard
-                name="林總經理"
-                title="國際貿易公司"
-                quote="選擇潔特務清潔是我們最明智的決定，他們值得信賴，服務品質始終如一。"
-              />
-            </AnimatedSection>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+              {reviews.map((review, index) => (
+                <AnimatedSection key={review.id} delay={index * 100}>
+                  <TestimonialCard
+                    name={review.name ?? ""}
+                    title="潔特務清潔客戶"
+                    quote={review.content ?? ""}
+                    avatarSrc={review.avatar || undefined}
+                  />
+                </AnimatedSection>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* FAQ Section */}
-      <section className="relative z-10 w-full bg-background" style={{ paddingTop: '80px', paddingBottom: '80px' }}>
-        <div className="w-full px-6 lg:px-8" style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          <AnimatedSection>
-            <h2 className="text-4xl font-bold text-center text-primary mb-24" style={{ marginBottom: '72px' }}>
-              常見問題
-            </h2>
-          </AnimatedSection>
-          <AnimatedSection delay={100}>
-            <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-              <Accordion type="single" collapsible className="w-full space-y-4">
-                <FAQItem
-                  value="item-1"
-                  question="潔特務清潔提供哪些服務？"
-                  answer="我們提供辦公室清潔、商業空間清潔、裝潢後清潔、定期維護清潔等企業級清潔服務。"
-                />
-                <FAQItem
-                  value="item-2"
-                  question="你們的清潔人員是否經過專業培訓？"
-                  answer="是的，我們的所有清潔特務都經過嚴格的專業培訓，熟悉最新的清潔技術和環保產品使用。"
-                />
-                <FAQItem
-                  value="item-3"
-                  question="如何預約清潔服務？"
-                  answer="您可以透過網站上的「立即預約」按鈕填寫表單，或直接撥打我們的服務專線，將有專人為您服務。"
-                />
-                <FAQItem
-                  value="item-4"
-                  question="你們使用哪些清潔產品？"
-                  answer="我們優先選用對環境友善、無毒且高效的清潔產品，確保清潔效果的同時，也保障您空間的健康與安全。"
-                />
-              </Accordion>
-            </div>
-          </AnimatedSection>
-        </div>
-      </section>
+      {faqs.length > 0 && (
+        <section className="relative z-10 w-full bg-background" style={{ paddingTop: '80px', paddingBottom: '80px' }}>
+          <div className="w-full px-6 lg:px-8" style={{ maxWidth: '1400px', margin: '0 auto' }}>
+            <AnimatedSection>
+              <h2 className="text-4xl font-bold text-center text-primary mb-24" style={{ marginBottom: '72px' }}>
+                常見問題
+              </h2>
+            </AnimatedSection>
+            <AnimatedSection delay={100}>
+              <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <Accordion type="single" collapsible className="w-full space-y-4">
+                  {faqs.map((faq) => (
+                    <FAQItem
+                      key={faq.id}
+                      value={`faq-${faq.id}`}
+                      question={faq.question ?? ""}
+                      answer={faq.answer ?? ""}
+                    />
+                  ))}
+                </Accordion>
+              </div>
+            </AnimatedSection>
+          </div>
+        </section>
+      )}
 
       {/* CTA Section */}
       <AnimatedSection>
