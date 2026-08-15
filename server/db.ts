@@ -678,6 +678,13 @@ export async function getMediaByCategory(category: string) {
   return db.select().from(media).where(eq(media.category, category)).orderBy(desc(media.createdAt));
 }
 
+export async function getMediaById(mediaId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const [record] = await db.select().from(media).where(eq(media.id, mediaId)).limit(1);
+  return record;
+}
+
 export async function createMedia(data: typeof media.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

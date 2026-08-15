@@ -37,6 +37,21 @@ const optionalAmountSchema = amountSchema.optional().nullable();
 const payrollStatusSchema = z.enum(["draft", "pending_review", "confirmed", "pending_payment", "paid"]);
 const attendanceStatusSchema = z.enum(["present", "leave", "day_off", "absent", "late", "early_leave", "half_day", "emergency_overtime"]);
 const payrollPeriodTypeSchema = z.enum(["first_half", "second_half", "monthly", "custom"]);
+const attendanceInputSchema = z.object({
+  employeeId: z.number().int().positive(),
+  scheduleId: z.number().int().positive().nullable().optional(),
+  workDate: dateSchema,
+  scheduledStartTime: timeSchema.nullable().optional(),
+  scheduledEndTime: timeSchema.nullable().optional(),
+  actualStartTime: timeSchema.nullable().optional(),
+  actualEndTime: timeSchema.nullable().optional(),
+  workHours: amountSchema,
+  status: attendanceStatusSchema,
+  lateMinutes: z.number().int().min(0).default(0),
+  earlyLeaveMinutes: z.number().int().min(0).default(0),
+  mealAllowance: amountSchema.default("0.00"),
+  notes: z.string().max(5000).optional().nullable(),
+});
 const salaryConfigurationSchema = z.object({
   effectiveFrom: dateSchema,
   effectiveTo: dateSchema.nullable().optional(),
@@ -77,6 +92,10 @@ function assertPeriodIsMutable(status: string) {
   if (isPayrollPeriodLocked(status as Parameters<typeof isPayrollPeriodLocked>[0])) {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "已確認或已發薪的薪資週期不可直接修改；請建立調整紀錄。" });
   }
+}
+
+export function assertAttendanceDatesMutable(periodStatuses: string[]) {
+  periodStatuses.forEach(assertPeriodIsMutable);
 }
 
 async function resolveEmployeeScope(userId: number, requestedEmployeeId: number | undefined, canManage: boolean) {
@@ -327,8 +346,7 @@ export const payrollRouter = router({
       if (employeeId) conditions.push(eq(payrollTables.attendanceRecords.employeeId, employeeId));
       return db.select().from(payrollTables.attendanceRecords).where(and(...conditions)).orderBy(asc(payrollTables.attendanceRecords.workDate));
     }),
-    create: protectedProcedure.input(z.object({ employeeId: z.number().int().positive(), scheduleId: z.number().int().positive().nullable().optional(), workDate: dateSchema, scheduledStartTime: timeSchema.nullable().optional(), scheduledEndTime: timeSchema.nullable().optional(), actualStartTime: timeSchema.nullable().optional(), actualEndTime: timeSchema.nullable().optional(), workHours: amountSchema, status: attendanceStatusSchema, lateMinutes: z.number().int().min(0).default(0), earlyLeaveMinutes: z.number().int().min(0).default(0), mealAllowance: amountSchema.default("0.00"), notes: z.string().max(5000).optional().nullable(),
-    })).mutation(async ({ ctx, input }) => {
+    create: protectedProcedure.input(attendanceInputSchema).mutation(async ({ ctx, input }) => {
       assertOperationsManager(ctx.user);
       const db = await requirePayrollDb();
       const result = await db.insert(payrollTables.attendanceRecords).values({ ...input, createdByUserId: ctx.user.id });
@@ -336,7 +354,25 @@ export const payrollRouter = router({
       await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "attendance", entityId: id, action: "create", afterData: input });
       return { id };
     }),
-    createBatch: protectedProcedure.input(z.object({ entries: z.array(z.object({ employeeId: z.number().int().positive(), scheduleId: z.number().int().positive().nullable().optional(), workDate: dateSchema, scheduledStartTime: timeSchema.nullable().optional(), scheduledEndTime: timeSchema.nullable().optional(), actualStartTime: timeSchema.nullable().optional(), actualEndTime: timeSchema.nullable().optional(), workHours: amountSchema, status: attendanceStatusSchema, lateMinutes: z.number().int().min(0).default(0), earlyLeaveMinutes: z.number().int().min(0).default(0), mealAllowance: amountSchema.default("0.00"), notes: z.string().max(5000).optional().nullable() })).min(1).max(200) })).mutation(async ({ ctx, input }) => {
+    update: protectedProcedure.input(attendanceInputSchema.extend({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      assertOperationsManager(ctx.user);
+      const db = await requirePayrollDb();
+      const existing = (await db.select().from(payrollTables.attendanceRecords).where(eq(payrollTables.attendanceRecords.id, input.id)).limit(1))[0];
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "找不到要編輯的出勤紀錄" });
+
+      const periodStatuses: string[] = [];
+      for (const workDate of [...new Set([existing.workDate, input.workDate])]) {
+        const period = (await db.select().from(payrollTables.payrollPeriods).where(and(lte(payrollTables.payrollPeriods.periodStart, workDate), gte(payrollTables.payrollPeriods.periodEnd, workDate))).limit(1))[0];
+        if (period) periodStatuses.push(period.status);
+      }
+      assertAttendanceDatesMutable(periodStatuses);
+
+      const { id, ...changes } = input;
+      await db.update(payrollTables.attendanceRecords).set(changes).where(eq(payrollTables.attendanceRecords.id, id));
+      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "attendance", entityId: id, action: "update", beforeData: existing, afterData: changes });
+      return { success: true };
+    }),
+    createBatch: protectedProcedure.input(z.object({ entries: z.array(attendanceInputSchema).min(1).max(200) })).mutation(async ({ ctx, input }) => {
       assertOperationsManager(ctx.user);
       const db = await requirePayrollDb();
       const result = await db.insert(payrollTables.attendanceRecords).values(input.entries.map((entry) => ({ ...entry, createdByUserId: ctx.user.id })));

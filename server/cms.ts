@@ -3,10 +3,11 @@ import * as db from "./db";
 import { createHash } from "crypto";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { hashCmsUserPassword } from "./adminAuth";
-import { storagePut } from "./storage";
+import { storageGetSignedUrl, storagePut } from "./storage";
 import { decodeMediaUpload, mediaStorageFilename } from "./mediaUpload";
 import { BOOKING_STATUSES } from "../shared/business";
 import { cmsCopywritingInputSchema, generateCmsCopywritingDraft } from "./cmsCopywriting";
+import { analyzeCmsMediaImage } from "./cmsMediaAnalysis";
 
 // Type assertion helper for role checking
 export type AllowedRoles = "super_admin" | "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
@@ -82,6 +83,7 @@ export const CMS_PERMISSIONS = {
   REVIEWS_MANAGE: ["admin", "marketing"],
   REVIEWS_DELETE: ["admin"],
   AI_COPY_GENERATE: ["admin", "marketing"],
+  MEDIA_AI_ANALYZE: ["admin", "editor"],
 } as const satisfies Record<string, readonly AllowedRoles[]>;
 
 export type CmsPermission = keyof typeof CMS_PERMISSIONS;
@@ -193,6 +195,19 @@ export function onlyPublishedServicesWithVisibleFAQs<
   }));
 }
 const isHighestAdmin = (email: string | null | undefined) => Boolean(email && ADMIN_EMAILS.includes(email));
+
+async function resolveMediaImageUrlForAnalysis(storedUrl: string) {
+  const storagePrefix = "/manus-storage/";
+  if (storedUrl.startsWith(storagePrefix)) {
+    const storageKey = storedUrl.slice(storagePrefix.length);
+    if (!storageKey || storageKey.includes("..")) throw new Error("媒體儲存位置無效，無法進行分析");
+    return storageGetSignedUrl(storageKey);
+  }
+
+  const externalUrl = new URL(storedUrl);
+  if (externalUrl.protocol !== "https:") throw new Error("僅支援安全 HTTPS 圖片網址進行分析");
+  return externalUrl.toString();
+}
 
 async function assertValidFAQServiceLink(serviceId: number | null | undefined) {
   if (serviceId === undefined || serviceId === null) return;
@@ -569,6 +584,24 @@ export const cmsRouter = router({
           throw new Error("Unauthorized");
         }
         return db.getMediaByCategory(input.category);
+      }),
+
+    analyzeImage: protectedProcedure
+      .input(z.object({ mediaId: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MEDIA_AI_ANALYZE")) {
+          throw new Error("您沒有 AI 圖片分析功能的使用權限");
+        }
+        const record = await db.getMediaById(input.mediaId);
+        if (!record) throw new Error("找不到指定媒體檔案");
+        if (record.type !== "image") throw new Error("僅能分析圖片格式的媒體檔案");
+
+        const imageUrl = await resolveMediaImageUrlForAnalysis(record.url);
+        return analyzeCmsMediaImage({
+          imageUrl,
+          filename: record.filename,
+          mimeType: record.mimeType,
+        });
       }),
 
     create: protectedProcedure

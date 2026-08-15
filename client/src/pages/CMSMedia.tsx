@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Plus, Trash2, Copy, Image as ImageIcon, Video, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, Copy, Image as ImageIcon, Video, Pencil, Sparkles } from "lucide-react";
 
 const ALLOWED_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm"];
 const MAX_MEDIA_BYTES = 20 * 1024 * 1024;
@@ -17,6 +17,16 @@ function readTags(value: unknown) {
   return Array.isArray(value) ? value.filter((tag): tag is string => typeof tag === "string") : [];
 }
 
+type EditableMedia = { id: number; filename: string; category?: string | null; alt?: string | null; tags?: unknown };
+type ImageAnalysisDraft = {
+  mediaId: number;
+  suggestedCategory: string;
+  suggestedAltText: string;
+  suggestedFilename: string;
+  confidence: "high" | "medium" | "low";
+  reasoning: string;
+};
+
 export default function CMSMedia() {
   const { user, isAuthenticated } = useAuth();
   const [category, setCategory] = useState("all");
@@ -28,13 +38,15 @@ export default function CMSMedia() {
   const [uploadTags, setUploadTags] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingMedia, setEditingMedia] = useState<{ id: number; filename: string; category?: string | null; alt?: string | null; tags?: unknown } | null>(null);
+  const [editingMedia, setEditingMedia] = useState<EditableMedia | null>(null);
   const [editFilename, setEditFilename] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editAlt, setEditAlt] = useState("");
   const [editTags, setEditTags] = useState("");
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
+  const [imageAnalysisDraft, setImageAnalysisDraft] = useState<ImageAnalysisDraft | null>(null);
+  const [imageAnalysisError, setImageAnalysisError] = useState<{ mediaId: number; message: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: media, isLoading, refetch } = trpc.cms.media.list.useQuery(undefined, {
@@ -51,6 +63,7 @@ export default function CMSMedia() {
   const updateMutation = trpc.cms.media.update.useMutation({
     onError: (error) => setEditError(error.message || "儲存媒體資料失敗，請稍後再試。"),
   });
+  const analyzeImageMutation = trpc.cms.media.analyzeImage.useMutation();
 
   const normalizedSearch = searchQuery.trim().toLocaleLowerCase("zh-TW");
   const filteredMedia = media?.filter((item) => {
@@ -127,7 +140,7 @@ export default function CMSMedia() {
     setUploadError("");
   };
 
-  const beginEdit = (item: { id: number; filename: string; category?: string | null; alt?: string | null; tags?: unknown }) => {
+  const beginEdit = (item: EditableMedia) => {
     setEditingMedia(item);
     setEditFilename(item.filename);
     setEditCategory(item.category || "");
@@ -135,6 +148,25 @@ export default function CMSMedia() {
     setEditTags(readTags(item.tags).join(", "));
     setEditError("");
     setEditSuccess("");
+  };
+
+  const analyzeImage = async (item: EditableMedia) => {
+    try {
+      setImageAnalysisError(null);
+      const draft = await analyzeImageMutation.mutateAsync({ mediaId: item.id });
+      setImageAnalysisDraft({ mediaId: item.id, ...draft });
+    } catch (error) {
+      setImageAnalysisDraft(null);
+      setImageAnalysisError({ mediaId: item.id, message: error instanceof Error ? error.message : "AI 圖片分析失敗，請稍後再試。" });
+    }
+  };
+
+  const applyImageAnalysis = (item: EditableMedia, draft: ImageAnalysisDraft) => {
+    beginEdit(item);
+    setEditFilename(draft.suggestedFilename);
+    setEditCategory(draft.suggestedCategory);
+    setEditAlt(draft.suggestedAltText);
+    setEditSuccess("AI 建議已帶入編輯表單；請檢查內容後點選「儲存中繼資料」才會寫入。 ");
   };
 
   const saveMetadata = async () => {
@@ -262,11 +294,14 @@ export default function CMSMedia() {
                   {item.category && <p className="mt-1 text-xs text-gray-500">{item.category}</p>}
                   {item.alt && <p className="mt-2 line-clamp-2 text-xs text-gray-600">{item.alt}</p>}
                   {readTags(item.tags).length > 0 && <div className="mt-2 flex flex-wrap gap-1">{readTags(item.tags).map((tag) => <span key={tag} className="rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">#{tag}</span>)}</div>}
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" className="flex-1" onClick={() => handleCopyUrl(item.url, item.id)}><Copy className="mr-1 h-4 w-4" />{copiedId === item.id ? "已複製" : "複製"}</Button>
+                    {item.type === "image" && <Button size="sm" variant="outline" className="border-[#8CC63F] text-[#163C72] hover:bg-lime-50" onClick={() => analyzeImage(item)} disabled={analyzeImageMutation.isPending}><Sparkles className="mr-1 h-4 w-4" />{analyzeImageMutation.isPending && analyzeImageMutation.variables?.mediaId === item.id ? "分析中" : "AI 分析"}</Button>}
                     <Button size="sm" variant="outline" aria-label={`編輯 ${item.filename}`} onClick={() => beginEdit(item)}><Pencil className="h-4 w-4" /></Button>
                     <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700" onClick={() => deleteMutation.mutate({ id: item.id })} disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
                   </div>
+                  {imageAnalysisError?.mediaId === item.id && <p role="alert" className="mt-3 text-xs font-medium text-red-600">{imageAnalysisError.message}</p>}
+                  {imageAnalysisDraft?.mediaId === item.id && <div className="mt-4 rounded-xl border border-lime-200 bg-lime-50/70 p-3 text-sm text-slate-700"><div className="flex items-center justify-between gap-3"><p className="font-semibold text-[#163C72]">AI 圖片分析草稿</p><span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-600">信心：{imageAnalysisDraft.confidence === "high" ? "高" : imageAnalysisDraft.confidence === "medium" ? "中" : "低"}</span></div><dl className="mt-3 space-y-2 text-xs"><div><dt className="font-medium text-slate-900">建議分類</dt><dd>{imageAnalysisDraft.suggestedCategory}</dd></div><div><dt className="font-medium text-slate-900">建議替代文字</dt><dd>{imageAnalysisDraft.suggestedAltText}</dd></div><div><dt className="font-medium text-slate-900">建議檔名</dt><dd className="break-all">{imageAnalysisDraft.suggestedFilename}</dd></div><div><dt className="font-medium text-slate-900">判斷說明</dt><dd>{imageAnalysisDraft.reasoning}</dd></div></dl><p className="mt-3 text-xs text-slate-600">此處僅顯示草稿，不會自動更改媒體資料。</p><Button size="sm" className="mt-3 bg-[#163C72]" onClick={() => applyImageAnalysis(item, imageAnalysisDraft)}>套用建議</Button></div>}
                 </div>
               </Card>
             ))}

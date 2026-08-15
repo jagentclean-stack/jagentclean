@@ -10,6 +10,7 @@ const testState = vi.hoisted(() => ({
   remove: vi.fn(),
   upload: vi.fn(async () => ({ id: 1 })),
   update: vi.fn(async () => ({ id: 1 })),
+  analyze: vi.fn(async () => ({ suggestedCategory: "案例", suggestedAltText: "室內廚房檯面清潔作業畫面", suggestedFilename: "kitchen-cleaning-case.webp", confidence: "medium", reasoning: "可辨識為室內清潔相關畫面。" })),
   media: [
     { id: 1, filename: "kitchen-before.webp", url: "/kitchen.webp", type: "image", category: "案例", alt: "廚房清潔前", tags: ["案例", "廚房"] },
     { id: 2, filename: "stone-care.mp4", url: "/stone.mp4", type: "video", category: "服務", alt: "石材保養影片" },
@@ -28,6 +29,7 @@ vi.mock("@/lib/trpc", () => ({
         delete: { useMutation: () => ({ mutate: testState.remove, isPending: false }) },
         upload: { useMutation: () => ({ mutateAsync: testState.upload, isPending: false }) },
         update: { useMutation: () => ({ mutateAsync: testState.update, isPending: false }) },
+        analyzeImage: { useMutation: () => ({ mutateAsync: testState.analyze, isPending: false, variables: undefined }) },
       },
     },
   },
@@ -55,6 +57,8 @@ afterEach(() => {
   testState.upload.mockResolvedValue({ id: 1 });
   testState.update.mockReset();
   testState.update.mockResolvedValue({ id: 1 });
+  testState.analyze.mockReset();
+  testState.analyze.mockResolvedValue({ suggestedCategory: "案例", suggestedAltText: "室內廚房檯面清潔作業畫面", suggestedFilename: "kitchen-cleaning-case.webp", confidence: "medium", reasoning: "可辨識為室內清潔相關畫面。" });
   vi.stubGlobal("FileReader", TestFileReader);
 });
 
@@ -104,5 +108,26 @@ describe("CMSMedia 管理介面", () => {
       tags: ["案例", "完工", "廚房"],
     }));
     expect(await screen.findByText("媒體資料已儲存。")).toBeTruthy();
+  });
+
+  it("僅讓圖片進行 AI 分析，套用建議只預填表單而不會自動寫入媒體資料", async () => {
+    render(<CMSMedia />);
+    expect(screen.getAllByRole("button", { name: "AI 分析" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "AI 分析" }));
+    expect(await screen.findByText("AI 圖片分析草稿")).toBeTruthy();
+    expect(screen.getByText("室內廚房檯面清潔作業畫面")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "套用建議" }));
+    expect((screen.getByLabelText("媒體名稱") as HTMLInputElement).value).toBe("kitchen-cleaning-case.webp");
+    expect((screen.getByLabelText("替代文字") as HTMLInputElement).value).toBe("室內廚房檯面清潔作業畫面");
+    expect(testState.update).not.toHaveBeenCalled();
+  });
+
+  it("AI 分析失敗時顯示錯誤訊息，且不會建立可套用的草稿", async () => {
+    testState.analyze.mockRejectedValueOnce(new Error("圖片辨識服務暫時無法使用"));
+    render(<CMSMedia />);
+    fireEvent.click(screen.getByRole("button", { name: "AI 分析" }));
+    expect(await screen.findByText("圖片辨識服務暫時無法使用")).toBeTruthy();
+    expect(screen.queryByText("AI 圖片分析草稿")).toBeNull();
+    expect(screen.queryByRole("button", { name: "套用建議" })).toBeNull();
   });
 });

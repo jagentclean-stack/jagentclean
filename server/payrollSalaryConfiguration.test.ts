@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { determineEmployeeDeletionMode, getNextEmployeeCodeFromExisting, oneDayBefore } from "./payroll";
+import { assertAttendanceDatesMutable, determineEmployeeDeletionMode, getNextEmployeeCodeFromExisting, oneDayBefore } from "./payroll";
 
 describe("薪資設定版本化基礎規則", () => {
   it("以最高既有 EMP 編號產生下一個編號，且不重用已刪除或停用員工的號碼", () => {
@@ -21,5 +21,11 @@ describe("薪資設定版本化基礎規則", () => {
       mode: "soft",
       reason: expect.stringContaining("已確認或已發薪"),
     });
+  });
+
+  it("出勤編輯僅可落在草稿或待審核週期，已確認與已發薪週期必須保留不可直接修改", () => {
+    expect(() => assertAttendanceDatesMutable(["draft", "pending_review"])).not.toThrow();
+    expect(() => assertAttendanceDatesMutable(["confirmed"])).toThrow("已確認或已發薪");
+    expect(() => assertAttendanceDatesMutable(["paid"])).toThrow("已確認或已發薪");
   });
 });
