@@ -55,11 +55,11 @@ export default function Header() {
       <div className="container flex h-full items-center justify-between px-6 lg:px-8" style={{ maxWidth: "1400px" }}>
         <Link href="/" className="flex shrink-0 items-center" aria-label={siteName ? `回到${siteName}首頁` : "回到首頁"}>
           {logoUrl ? (
-            <span className="flex h-12 w-[142px] items-center overflow-hidden sm:w-[158px]">
+            <span className="flex h-16 w-24 items-center justify-center sm:w-28">
               <img
                 src={logoUrl}
                 alt={siteName ? `${siteName} Logo` : "網站 Logo"}
-                className="h-[72px] max-w-none -translate-y-[18px] object-contain"
+                className="h-full w-full object-contain"
               />
             </span>
           ) : siteName ? (
