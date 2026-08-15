@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { canAccessCmsPermission, CMS_PERMISSIONS, normalizeCmsRole, resolveCmsPermission } from "./cms";
+import { applyCmsRolePermissionOverrides, canAccessCmsPermission, CMS_PERMISSIONS, normalizeCmsRole, resolveCmsPermission } from "./cms";
 
 describe("CMS RBAC permission matrix", () => {
   it("保留歷史 manager 角色的 admin 別名", () => {
@@ -55,6 +55,28 @@ describe("CMS RBAC permission matrix", () => {
   it("不會將未知角色或一般使用者授權為 CMS 管理者", () => {
     expect(canAccessCmsPermission("user", "user@example.com", "DASHBOARD_READ")).toBe(false);
     expect(canAccessCmsPermission("unknown_role", "unknown@example.com", "BLOGS_MANAGE")).toBe(false);
+  });
+
+  it("優先套用資料庫角色權限覆寫，並在未設定項目安全回退中央預設值", () => {
+    applyCmsRolePermissionOverrides([
+      { role: "editor", permission: "SERVICES_DELETE", isAllowed: true },
+      { role: "marketing", permission: "BLOGS_MANAGE", isAllowed: false },
+    ]);
+    expect(canAccessCmsPermission("editor", "editor@example.com", "SERVICES_DELETE")).toBe(true);
+    expect(canAccessCmsPermission("marketing", "marketing@example.com", "BLOGS_MANAGE")).toBe(false);
+    expect(canAccessCmsPermission("editor", "editor@example.com", "SERVICES_UPDATE")).toBe(true);
+    applyCmsRolePermissionOverrides([]);
+    expect(canAccessCmsPermission("editor", "editor@example.com", "SERVICES_DELETE")).toBe(false);
+  });
+
+  it("不得透過自訂覆寫降低 super_admin 或指定最高權限 Email 的功能權限", () => {
+    applyCmsRolePermissionOverrides([
+      { role: "super_admin", permission: "USERS_MANAGE", isAllowed: false },
+      { role: "user", permission: "USERS_MANAGE", isAllowed: false },
+    ]);
+    expect(canAccessCmsPermission("super_admin", "owner@example.com", "USERS_MANAGE")).toBe(true);
+    expect(canAccessCmsPermission("user", "jagentclean@gmail.com", "USERS_MANAGE")).toBe(true);
+    applyCmsRolePermissionOverrides([]);
   });
 
   it("所有 CMS 路由均直接使用具名權限矩陣，而非分散角色白名單", () => {

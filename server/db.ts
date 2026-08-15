@@ -1,6 +1,6 @@
 import { eq, and, desc, asc, isNull, lte, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, roles, permissions, pages, sections, menus, services, cases, blogs, categories, faqs, reviews, banners, media, contacts, bookings, settings, seo, hero, footer, Hero, Footer, InsertHero, InsertFooter } from "../drizzle/schema";
+import { InsertUser, users, roles, permissions, cmsRolePermissionOverrides, cmsPermissionAuditLog, pages, sections, menus, services, cases, blogs, categories, faqs, reviews, banners, media, contacts, bookings, settings, seo, hero, footer, Hero, Footer, InsertHero, InsertFooter } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { buildMenuTree } from "./menuTree";
 
@@ -46,6 +46,49 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+export async function getCmsRolePermissionOverrides(role: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(cmsRolePermissionOverrides).where(eq(cmsRolePermissionOverrides.role, role));
+}
+
+export async function getAllCmsRolePermissionOverrides() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(cmsRolePermissionOverrides);
+}
+
+export async function setCmsRolePermissionOverride(input: {
+  role: string;
+  permission: string;
+  isAllowed: boolean;
+  updatedBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("資料庫暫時無法使用，無法儲存權限設定。");
+  const existing = (await db.select().from(cmsRolePermissionOverrides)
+    .where(and(eq(cmsRolePermissionOverrides.role, input.role), eq(cmsRolePermissionOverrides.permission, input.permission)))
+    .limit(1))[0] ?? null;
+  await db.insert(cmsRolePermissionOverrides).values(input).onDuplicateKeyUpdate({
+    set: { isAllowed: input.isAllowed, updatedBy: input.updatedBy },
+  });
+  await db.insert(cmsPermissionAuditLog).values({
+    role: input.role,
+    permission: input.permission,
+    previousAllowed: existing?.isAllowed ?? null,
+    nextAllowed: input.isAllowed,
+    changedBy: input.updatedBy,
+  });
+}
+
+export async function getCmsPermissionAudit(role?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return role
+    ? db.select().from(cmsPermissionAuditLog).where(eq(cmsPermissionAuditLog.role, role)).orderBy(desc(cmsPermissionAuditLog.createdAt))
+    : db.select().from(cmsPermissionAuditLog).orderBy(desc(cmsPermissionAuditLog.createdAt));
 }
 
 /** 僅供公開網站使用：所有回傳內容皆已發布或可公開顯示。 */

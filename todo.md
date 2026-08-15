@@ -82,7 +82,7 @@
 - [x] 網站設定（Logo、公司名稱、聯繫資訊、GA4、Meta Pixel）
 - [x] 員工管理（新增、角色分配、停用／啟用）
 - [x] 將 CMS 各功能的 read、create、update、delete、publish 行為收斂至可審核的中央權限矩陣，避免路由內分散角色白名單
-- [ ] 權限管理（細粒度的角色權限控制）
+- [x] 權限管理（細粒度的角色權限控制）
 - [x] 正規化 CMS 角色檢查，確保 super_admin 可繼承所有管理權限，並安全處理歷史 manager 角色別名
 - [x] 將 CMS 各功能的 read、create、update、delete、publish 行為收斂至可審核的中央權限矩陣，避免路由內分散角色白名單
 - [ ] AI 文案生成（FB、IG、LINE、Google 商家貼文）
@@ -206,6 +206,9 @@
 - [x] RBAC 權限系統實現
 - [x] Debug 頁面（/admin/debug）
 - [x] CMS 後台權限檢查
+- [x] 建立可設定的角色功能權限資料模型，保留現有中央 RBAC 預設值與最高權限帳號的不可降權保護
+- [x] 提供超級管理員可檢視及調整角色功能權限的 CMS 管理介面，並記錄每次異動
+- [x] 驗證自訂角色權限對 CMS 路由及操作生效，且未設定項目安全回退至既有預設權限
 - [ ] 前台內容權限控制
 - [x] 匿名驗證已發布 auth.me 不回傳使用者敏感資料，且 CMS 路由初始 HTML 採 noindex
 - [ ] 以授權管理員已登入會話驗證 /cms、/cms/prices 與 /cms/users 的讀取、儲存及角色保護操作

@@ -84,6 +84,34 @@ export const CMS_PERMISSIONS = {
 
 export type CmsPermission = keyof typeof CMS_PERMISSIONS;
 
+const cmsRolePermissionOverrideCache = new Map<string, boolean>();
+const permissionOverrideCacheKey = (role: string, permission: CmsPermission) => `${role}:${permission}`;
+
+/**
+ * 自訂角色權限儲存在資料庫；快取載入失敗時刻意回退中央預設矩陣，避免因暫時
+ * 資料庫問題而意外提高任何帳號的存取權限。更新設定後會立即刷新目前執行個體。
+ */
+export async function refreshCmsRolePermissionOverrideCache() {
+  const overrides = await db.getAllCmsRolePermissionOverrides();
+  applyCmsRolePermissionOverrides(overrides);
+}
+
+export function applyCmsRolePermissionOverrides(overrides: Array<{ role: string; permission: string; isAllowed: boolean }>) {
+  cmsRolePermissionOverrideCache.clear();
+  for (const override of overrides) {
+    if (Object.prototype.hasOwnProperty.call(CMS_PERMISSIONS, override.permission)) {
+      cmsRolePermissionOverrideCache.set(
+        permissionOverrideCacheKey(override.role, override.permission as CmsPermission),
+        override.isAllowed,
+      );
+    }
+  }
+}
+
+void refreshCmsRolePermissionOverrideCache().catch((error) => {
+  console.warn("[CMS RBAC] 無法載入自訂角色權限，已安全回退至預設權限矩陣。", error);
+});
+
 export const resolveCmsPermission = (roles: readonly AllowedRoles[]): CmsPermission | undefined => {
   const normalizedRoles = Array.from(new Set(
     roles
@@ -114,6 +142,14 @@ export const canAccessCmsPermission = (
     return true;
   }
   if (normalizedRole === "super_admin") return true;
+  const explicitOverride = userRole
+    ? cmsRolePermissionOverrideCache.get(permissionOverrideCacheKey(userRole, permission))
+    : undefined;
+  const normalizedOverride = normalizedRole
+    ? cmsRolePermissionOverrideCache.get(permissionOverrideCacheKey(normalizedRole, permission))
+    : undefined;
+  if (explicitOverride !== undefined) return explicitOverride;
+  if (normalizedOverride !== undefined) return normalizedOverride;
   return CMS_PERMISSIONS[permission].includes(normalizedRole as never);
 };
 
@@ -1294,6 +1330,46 @@ export const cmsRouter = router({
           throw new Error("Unauthorized");
         }
         return db.deleteReview(input.id);
+      }),
+  }),
+
+  /** 可由最高權限帳號調整的 CMS 功能權限覆寫；未設定時回退中央預設矩陣。 */
+  rolePermissions: router({
+    list: protectedProcedure
+      .input(z.object({ role: cmsUserRoleSchema.exclude(["super_admin"]) }))
+      .query(async ({ input, ctx }) => {
+        if (!isHighestAdmin(ctx.user?.email)) throw new Error("只有最高權限管理員可檢視角色功能權限。");
+        const overrides = await db.getCmsRolePermissionOverrides(input.role);
+        const overrideByPermission = new Map(overrides.map((item) => [item.permission, item]));
+        return (Object.keys(CMS_PERMISSIONS) as CmsPermission[]).map((permission) => {
+          const override = overrideByPermission.get(permission);
+          const defaultAllowed = CMS_PERMISSIONS[permission].includes(normalizeCmsRole(input.role) as never);
+          return {
+            permission,
+            defaultAllowed,
+            isAllowed: override?.isAllowed ?? defaultAllowed,
+            isOverridden: Boolean(override),
+            updatedAt: override?.updatedAt ?? null,
+          };
+        });
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        role: cmsUserRoleSchema.exclude(["super_admin"]),
+        permission: z.enum(Object.keys(CMS_PERMISSIONS) as [CmsPermission, ...CmsPermission[]]),
+        isAllowed: z.boolean(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!isHighestAdmin(ctx.user?.email) || !ctx.user) throw new Error("只有最高權限管理員可調整角色功能權限。");
+        await db.setCmsRolePermissionOverride({ ...input, updatedBy: ctx.user.id });
+        await refreshCmsRolePermissionOverrideCache();
+        return { success: true };
+      }),
+    audit: protectedProcedure
+      .input(z.object({ role: cmsUserRoleSchema.exclude(["super_admin"]).optional() }).optional())
+      .query(async ({ input, ctx }) => {
+        if (!isHighestAdmin(ctx.user?.email)) throw new Error("只有最高權限管理員可檢視權限異動紀錄。");
+        return db.getCmsPermissionAudit(input?.role);
       }),
   }),
 

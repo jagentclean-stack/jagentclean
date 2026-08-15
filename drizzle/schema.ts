@@ -75,6 +75,39 @@ export type Permission = typeof permissions.$inferSelect;
 export type InsertPermission = typeof permissions.$inferInsert;
 
 /**
+ * CMS 功能權限覆寫：未建立紀錄時，安全回退至 cms.ts 的中央預設矩陣。
+ * 最高權限帳號與 super_admin 不讀取覆寫，避免被降權而失去復原能力。
+ */
+export const cmsRolePermissionOverrides = mysqlTable("cms_role_permission_overrides", {
+  id: int("id").autoincrement().primaryKey(),
+  role: varchar("role", { length: 64 }).notNull(),
+  permission: varchar("permission", { length: 96 }).notNull(),
+  isAllowed: boolean("isAllowed").notNull(),
+  updatedBy: int("updatedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  unique("cms_role_permission_overrides_role_permission_unique").on(table.role, table.permission),
+  index("cms_role_permission_overrides_role_idx").on(table.role),
+]);
+
+export const cmsPermissionAuditLog = mysqlTable("cms_permission_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  role: varchar("role", { length: 64 }).notNull(),
+  permission: varchar("permission", { length: 96 }).notNull(),
+  previousAllowed: boolean("previousAllowed"),
+  nextAllowed: boolean("nextAllowed").notNull(),
+  changedBy: int("changedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("cms_permission_audit_log_role_permission_idx").on(table.role, table.permission),
+  index("cms_permission_audit_log_changed_by_idx").on(table.changedBy),
+]);
+
+export type CmsRolePermissionOverride = typeof cmsRolePermissionOverrides.$inferSelect;
+export type CmsPermissionAuditLog = typeof cmsPermissionAuditLog.$inferSelect;
+
+/**
  * 網站頁面表
  */
 export const pages = mysqlTable("pages", {
