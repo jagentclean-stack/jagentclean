@@ -62,7 +62,7 @@ describe("HRPayroll 薪資工作台", () => {
     expect(screen.getAllByText("115 年 7 月").length).toBeGreaterThan(0);
     expect(screen.getByText("林小潔尚未設定銀行資料")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: "全員批次試算" }));
+    fireEvent.click(screen.getByRole("button", { name: "批次試算全體員工" }));
     expect(state.batchCalculate).toHaveBeenCalledWith({ payrollPeriodId: 11, employeeIds: [22] });
 
     fireEvent.click(screen.getByRole("button", { name: "標記已處理" }));
@@ -72,7 +72,7 @@ describe("HRPayroll 薪資工作台", () => {
   it("已確認週期不提供重新試算按鈕，避免直接改寫已鎖定薪資", () => {
     state.periodStatus = "confirmed";
     render(<HRPayroll />);
-    expect(screen.queryByRole("button", { name: "全員批次試算" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "批次試算全體員工" })).toBeNull();
     expect(screen.queryByRole("button", { name: "試算" })).toBeNull();
     expect(screen.getByText("已鎖定")).toBeTruthy();
   });

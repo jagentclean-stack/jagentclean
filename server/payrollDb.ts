@@ -3,6 +3,7 @@ import {
   advanceRepayments,
   attendanceRecords,
   employeeAdvances,
+  employeeSalaryAdjustmentHistory,
   employeeSalarySettings,
   employees,
   overtimeRecords,
@@ -14,6 +15,7 @@ import {
   payrollPayments,
   payrollPeriods,
   payrollRuns,
+  users,
   workSchedules,
 } from "../drizzle/schema";
 import { getDb } from "./db";
@@ -47,6 +49,50 @@ export async function getSalarySettingForPeriod(employeeId: number, periodStart:
     .where(and(eq(employeeSalarySettings.employeeId, employeeId), eq(employeeSalarySettings.isActive, true), lte(employeeSalarySettings.effectiveFrom, periodStart)))
     .orderBy(desc(employeeSalarySettings.effectiveFrom));
   return settings.find((setting) => !setting.effectiveTo || setting.effectiveTo >= periodStart);
+}
+
+export async function getSalaryAdjustmentHistory(employeeId: number) {
+  const db = await requirePayrollDb();
+  const rows = await db
+    .select({ adjustment: employeeSalaryAdjustmentHistory, operatorName: users.name, operatorEmail: users.email })
+    .from(employeeSalaryAdjustmentHistory)
+    .leftJoin(users, eq(employeeSalaryAdjustmentHistory.adjustedByUserId, users.id))
+    .where(eq(employeeSalaryAdjustmentHistory.employeeId, employeeId))
+    .orderBy(desc(employeeSalaryAdjustmentHistory.effectiveDate), desc(employeeSalaryAdjustmentHistory.createdAt));
+  return rows.map(({ adjustment, operatorName, operatorEmail }) => ({ ...adjustment, operatorName: operatorName || operatorEmail || "系統管理員" }));
+}
+
+export async function recordSalaryAdjustment(input: {
+  employeeId: number;
+  salarySettingId: number;
+  adjustedByUserId: number;
+  effectiveDate: string;
+  reason?: string | null;
+  previousConfig?: unknown;
+  newConfig: unknown;
+}) {
+  const db = await requirePayrollDb();
+  const result = await db.insert(employeeSalaryAdjustmentHistory).values({
+    employeeId: input.employeeId,
+    salarySettingId: input.salarySettingId,
+    adjustedByUserId: input.adjustedByUserId,
+    effectiveDate: input.effectiveDate,
+    reason: input.reason ?? null,
+    previousConfig: input.previousConfig ?? null,
+    newConfig: input.newConfig,
+  });
+  return Number(result[0].insertId);
+}
+
+export async function getEmployeePayslipHistory(employeeId: number) {
+  const db = await requirePayrollDb();
+  return db
+    .select({ run: payrollRuns, period: payrollPeriods, payment: payrollPayments })
+    .from(payrollRuns)
+    .innerJoin(payrollPeriods, eq(payrollRuns.payrollPeriodId, payrollPeriods.id))
+    .leftJoin(payrollPayments, eq(payrollRuns.id, payrollPayments.payrollRunId))
+    .where(eq(payrollRuns.employeeId, employeeId))
+    .orderBy(desc(payrollPeriods.periodStart), desc(payrollRuns.id));
 }
 
 export async function getPayrollCalculationSources(employeeId: number, periodStart: string, periodEnd: string, payrollPeriodId: number) {
@@ -181,6 +227,7 @@ export const payrollTables = {
   advanceRepayments,
   attendanceRecords,
   employeeAdvances,
+  employeeSalaryAdjustmentHistory,
   employeeSalarySettings,
   employees,
   overtimeRecords,

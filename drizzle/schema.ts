@@ -499,6 +499,28 @@ export const employeeSalarySettings = mysqlTable("employee_salary_settings", {
 
 export type EmployeeSalarySetting = typeof employeeSalarySettings.$inferSelect;
 
+/**
+ * 員工每次薪資異動的不可變更稽核紀錄。設定本身採有效期間版本化；
+ * 此表額外保留調整原因、操作者以及調整前後完整快照，方便會計追溯。
+ */
+export const employeeSalaryAdjustmentHistory = mysqlTable("employee_salary_adjustment_history", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  salarySettingId: int("salarySettingId").notNull(),
+  adjustedByUserId: int("adjustedByUserId").notNull(),
+  effectiveDate: varchar("effectiveDate", { length: 10 }).notNull(),
+  reason: text("reason"),
+  previousConfig: json("previousConfig"),
+  newConfig: json("newConfig").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("salary_adjustment_employee_date_idx").on(table.employeeId, table.effectiveDate),
+  index("salary_adjustment_setting_idx").on(table.salarySettingId),
+  index("salary_adjustment_actor_idx").on(table.adjustedByUserId),
+]);
+
+export type EmployeeSalaryAdjustmentHistory = typeof employeeSalaryAdjustmentHistory.$inferSelect;
+
 /** 薪資計算、審核、發薪所共同使用的月份與狀態。 */
 export const payrollPeriods = mysqlTable("payroll_periods", {
   id: int("id").autoincrement().primaryKey(),

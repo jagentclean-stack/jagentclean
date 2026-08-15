@@ -6,12 +6,15 @@ import { calculatePayroll } from "./payrollCalculation";
 import {
   getEmployeeById,
   getEmployeeByUserId,
+  getEmployeePayslipHistory,
   getPayrollCalculationSources,
   getPayrollPeriod,
+  getSalaryAdjustmentHistory,
   getSalarySettingForPeriod,
   listAdvanceBalances,
   listPayrollAlerts,
   payrollTables,
+  recordSalaryAdjustment,
   requirePayrollDb,
   resolvePayrollAlert,
   syncPayrollAlerts,
@@ -34,6 +37,22 @@ const optionalAmountSchema = amountSchema.optional().nullable();
 const payrollStatusSchema = z.enum(["draft", "pending_review", "confirmed", "pending_payment", "paid"]);
 const attendanceStatusSchema = z.enum(["present", "leave", "day_off", "absent", "late", "early_leave", "half_day", "emergency_overtime"]);
 const payrollPeriodTypeSchema = z.enum(["first_half", "second_half", "monthly", "custom"]);
+const salaryConfigurationSchema = z.object({
+  effectiveFrom: dateSchema,
+  effectiveTo: dateSchema.nullable().optional(),
+  salaryType: z.enum(["daily", "hourly", "monthly", "special"]),
+  dailyRate: optionalAmountSchema,
+  hourlyRate: optionalAmountSchema,
+  monthlyRate: optionalAmountSchema,
+  mealAllowance: amountSchema.default("100.00"),
+  supervisorAllowance: amountSchema.default("0.00"),
+  drivingAllowance: amountSchema.default("0.00"),
+  transportationAllowance: amountSchema.default("0.00"),
+  otherAllowance: amountSchema.default("0.00"),
+  overtimeMode: z.enum(["manual", "hourly_multiplier", "fixed"]).default("manual"),
+  overtimeMultiplier: amountSchema.default("1.00"),
+  overtimeFixedRate: optionalAmountSchema,
+});
 
 export function buildPayrollPeriodDefinition(year: number, month: number, periodType: "first_half" | "second_half" | "monthly") {
   const pad = (value: number) => String(value).padStart(2, "0");
@@ -71,6 +90,32 @@ async function resolveEmployeeScope(userId: number, requestedEmployeeId: number 
 async function assertOperationEmployeeScope(userId: number, requestedEmployeeId: number, canManage: boolean) {
   const scopedEmployeeId = await resolveEmployeeScope(userId, requestedEmployeeId, canManage);
   if (scopedEmployeeId !== requestedEmployeeId) throw new TRPCError({ code: "FORBIDDEN", message: "您只能修改自己的資料" });
+}
+
+export function oneDayBefore(date: string) {
+  const current = new Date(`${date}T00:00:00.000Z`);
+  current.setUTCDate(current.getUTCDate() - 1);
+  return current.toISOString().slice(0, 10);
+}
+
+export function determineEmployeeDeletionMode(input: { hasRelatedRecords: boolean; hasLockedPayroll: boolean }) {
+  if (input.hasLockedPayroll) return { mode: "soft" as const, reason: "此員工已有已確認或已發薪紀錄，為保留薪資稽核資料已改為停用。" };
+  if (input.hasRelatedRecords) return { mode: "soft" as const, reason: "此員工已有排班、出勤、薪資設定或其他人事紀錄，為保留歷史資料已改為停用。" };
+  return { mode: "hard" as const, reason: "此員工尚無任何關聯資料，已可安全永久刪除。" };
+}
+
+export function getNextEmployeeCodeFromExisting(codes: Array<string | null | undefined>) {
+  const highest = codes.reduce((max, employeeCode) => {
+    const match = employeeCode?.match(/^EMP-(\d+)$/i);
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+  return `EMP-${String(highest + 1).padStart(3, "0")}`;
+}
+
+async function getNextEmployeeCode() {
+  const db = await requirePayrollDb();
+  const rows = await db.select({ employeeCode: payrollTables.employees.employeeCode }).from(payrollTables.employees);
+  return getNextEmployeeCodeFromExisting(rows.map((row) => row.employeeCode));
 }
 
 async function calculatePayrollRun(actorUserId: number, payrollPeriodId: number, employeeId: number) {
@@ -132,30 +177,102 @@ export const payrollRouter = router({
       assertPayrollManager(ctx.user);
       const db = await requirePayrollDb();
       const { nationalId, bankAccount, ...employeeInput } = input;
+      const employeeCode = employeeInput.employeeCode || await getNextEmployeeCode();
       const result = await db.insert(payrollTables.employees).values({
         ...employeeInput,
+        employeeCode,
         nationalIdEncrypted: encryptPayrollSensitiveValue(nationalId ?? undefined),
         bankAccountEncrypted: encryptPayrollSensitiveValue(bankAccount ?? undefined),
         bankAccountLast4: bankAccount ? bankAccount.replace(/\s/g, "").slice(-4) : null,
       });
       const id = Number(result[0].insertId);
-      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "employee", entityId: id, action: "create", afterData: { name: input.name, employeeCode: input.employeeCode } });
-      return { id };
+      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "employee", entityId: id, action: "create", afterData: { name: input.name, employeeCode } });
+      return { id, employeeCode };
     }),
     update: protectedProcedure.input(z.object({
-      id: z.number().int().positive(), name: z.string().min(1).max(120).optional(), nickname: z.string().max(120).nullable().optional(), phone: z.string().max(32).nullable().optional(), email: z.string().email().nullable().optional(), address: z.string().max(2000).nullable().optional(), departmentId: z.number().int().positive().nullable().optional(), positionId: z.number().int().positive().nullable().optional(), jobTitle: z.string().max(120).nullable().optional(), employmentStatus: z.enum(["active", "inactive", "leave_of_absence", "terminated"]).optional(), terminationDate: dateSchema.nullable().optional(), bankName: z.string().max(120).nullable().optional(), bankAccount: z.string().max(64).nullable().optional(), notes: z.string().max(5000).nullable().optional(),
+      id: z.number().int().positive(), name: z.string().min(1).max(120).optional(), nickname: z.string().max(120).nullable().optional(), phone: z.string().max(32).nullable().optional(), email: z.string().email().nullable().optional(), nationalId: z.string().max(32).nullable().optional(), gender: z.enum(["female", "male", "other", "unspecified"]).nullable().optional(), birthDate: dateSchema.nullable().optional(), address: z.string().max(2000).nullable().optional(), emergencyContactName: z.string().max(120).nullable().optional(), emergencyContactPhone: z.string().max(32).nullable().optional(), departmentId: z.number().int().positive().nullable().optional(), positionId: z.number().int().positive().nullable().optional(), jobTitle: z.string().max(120).nullable().optional(), hireDate: dateSchema.optional(), employmentStatus: z.enum(["active", "inactive", "leave_of_absence", "terminated"]).optional(), terminationDate: dateSchema.nullable().optional(), bankName: z.string().max(120).nullable().optional(), bankAccount: z.string().max(64).nullable().optional(), notes: z.string().max(5000).nullable().optional(),
     })).mutation(async ({ ctx, input }) => {
       assertPayrollManager(ctx.user);
       const current = await getEmployeeById(input.id);
       if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "找不到員工資料" });
-      const { id, bankAccount, ...updates } = input;
+      const { id, bankAccount, nationalId, ...updates } = input;
       const db = await requirePayrollDb();
-      await db.update(payrollTables.employees).set({ ...updates, ...(bankAccount !== undefined ? {
+      await db.update(payrollTables.employees).set({ ...updates, ...(nationalId !== undefined ? {
+        nationalIdEncrypted: nationalId ? encryptPayrollSensitiveValue(nationalId) : null,
+      } : {}), ...(bankAccount !== undefined ? {
         bankAccountEncrypted: bankAccount ? encryptPayrollSensitiveValue(bankAccount) : null,
         bankAccountLast4: bankAccount ? bankAccount.replace(/\s/g, "").slice(-4) : null,
       } : {}) }).where(eq(payrollTables.employees.id, id));
       await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "employee", entityId: id, action: "update", beforeData: sanitizeEmployee(current), afterData: updates });
       return { success: true };
+    }),
+    delete: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+      assertPayrollManager(ctx.user);
+      const current = await getEmployeeById(input.id);
+      if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "找不到員工資料" });
+      const db = await requirePayrollDb();
+      const [runs, schedules, attendance, overtime, settings, adjustments, advances, bonuses, deductions] = await Promise.all([
+        db.select({ id: payrollTables.payrollRuns.id, status: payrollTables.payrollRuns.status }).from(payrollTables.payrollRuns).where(eq(payrollTables.payrollRuns.employeeId, input.id)).limit(20),
+        db.select({ id: payrollTables.workSchedules.id }).from(payrollTables.workSchedules).where(eq(payrollTables.workSchedules.employeeId, input.id)).limit(1),
+        db.select({ id: payrollTables.attendanceRecords.id }).from(payrollTables.attendanceRecords).where(eq(payrollTables.attendanceRecords.employeeId, input.id)).limit(1),
+        db.select({ id: payrollTables.overtimeRecords.id }).from(payrollTables.overtimeRecords).where(eq(payrollTables.overtimeRecords.employeeId, input.id)).limit(1),
+        db.select({ id: payrollTables.employeeSalarySettings.id }).from(payrollTables.employeeSalarySettings).where(eq(payrollTables.employeeSalarySettings.employeeId, input.id)).limit(1),
+        db.select({ id: payrollTables.employeeSalaryAdjustmentHistory.id }).from(payrollTables.employeeSalaryAdjustmentHistory).where(eq(payrollTables.employeeSalaryAdjustmentHistory.employeeId, input.id)).limit(1),
+        db.select({ id: payrollTables.employeeAdvances.id }).from(payrollTables.employeeAdvances).where(eq(payrollTables.employeeAdvances.employeeId, input.id)).limit(1),
+        db.select({ id: payrollTables.payrollBonuses.id }).from(payrollTables.payrollBonuses).where(eq(payrollTables.payrollBonuses.employeeId, input.id)).limit(1),
+        db.select({ id: payrollTables.payrollDeductions.id }).from(payrollTables.payrollDeductions).where(eq(payrollTables.payrollDeductions.employeeId, input.id)).limit(1),
+      ]);
+      const decision = determineEmployeeDeletionMode({
+        hasLockedPayroll: runs.some((item) => ["confirmed", "pending_payment", "paid"].includes(item.status)),
+        hasRelatedRecords: [runs, schedules, attendance, overtime, settings, adjustments, advances, bonuses, deductions].some((items) => items.length > 0),
+      });
+      if (decision.mode === "soft") {
+        await db.update(payrollTables.employees).set({ employmentStatus: "inactive", terminationDate: current.terminationDate ?? new Date().toISOString().slice(0, 10) }).where(eq(payrollTables.employees.id, input.id));
+        await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "employee", entityId: input.id, action: "deactivate", reason: decision.reason, beforeData: sanitizeEmployee(current), afterData: { employmentStatus: "inactive" } });
+      } else {
+        await db.delete(payrollTables.employees).where(eq(payrollTables.employees.id, input.id));
+        await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "employee", entityId: input.id, action: "delete", reason: decision.reason, beforeData: sanitizeEmployee(current) });
+      }
+      return decision;
+    }),
+    salaryConfig: protectedProcedure.input(z.object({ employeeId: z.number().int().positive() })).query(async ({ ctx, input }) => {
+      assertPayrollManager(ctx.user);
+      const db = await requirePayrollDb();
+      return db.select().from(payrollTables.employeeSalarySettings).where(eq(payrollTables.employeeSalarySettings.employeeId, input.employeeId)).orderBy(desc(payrollTables.employeeSalarySettings.effectiveFrom));
+    }),
+    salaryAdjustmentHistory: protectedProcedure.input(z.object({ employeeId: z.number().int().positive() })).query(async ({ ctx, input }) => {
+      assertPayrollManager(ctx.user);
+      return getSalaryAdjustmentHistory(input.employeeId);
+    }),
+    payslipHistory: protectedProcedure.input(z.object({ employeeId: z.number().int().positive() })).query(async ({ ctx, input }) => {
+      assertPayrollManager(ctx.user);
+      return getEmployeePayslipHistory(input.employeeId);
+    }),
+    updateSalaryConfig: protectedProcedure.input(z.object({ employeeId: z.number().int().positive(), reason: z.string().max(5000).nullable().optional() }).merge(salaryConfigurationSchema)).mutation(async ({ ctx, input }) => {
+      assertPayrollManager(ctx.user);
+      const employee = await getEmployeeById(input.employeeId);
+      if (!employee) throw new TRPCError({ code: "NOT_FOUND", message: "找不到員工資料" });
+      const db = await requirePayrollDb();
+      const { employeeId, reason, ...configuration } = input;
+      const current = await getSalarySettingForPeriod(employeeId, configuration.effectiveFrom);
+      let salarySettingId: number;
+      let previousConfig: unknown = null;
+      if (current && current.effectiveFrom === configuration.effectiveFrom) {
+        previousConfig = current;
+        await db.update(payrollTables.employeeSalarySettings).set({ ...configuration, isActive: true }).where(eq(payrollTables.employeeSalarySettings.id, current.id));
+        salarySettingId = current.id;
+      } else {
+        if (current && (!current.effectiveTo || current.effectiveTo >= configuration.effectiveFrom)) {
+          previousConfig = current;
+          await db.update(payrollTables.employeeSalarySettings).set({ effectiveTo: oneDayBefore(configuration.effectiveFrom) }).where(eq(payrollTables.employeeSalarySettings.id, current.id));
+        }
+        const result = await db.insert(payrollTables.employeeSalarySettings).values({ employeeId, ...configuration, isActive: true });
+        salarySettingId = Number(result[0].insertId);
+      }
+      const saved = (await db.select().from(payrollTables.employeeSalarySettings).where(eq(payrollTables.employeeSalarySettings.id, salarySettingId)).limit(1))[0];
+      const historyId = await recordSalaryAdjustment({ employeeId, salarySettingId, adjustedByUserId: ctx.user.id, effectiveDate: configuration.effectiveFrom, reason, previousConfig, newConfig: saved ?? { employeeId, ...configuration } });
+      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "salary_setting", entityId: salarySettingId, action: current ? "adjust" : "create", reason, beforeData: previousConfig, afterData: saved ?? configuration });
+      return { salarySettingId, historyId };
     }),
   }),
 
@@ -165,12 +282,12 @@ export const payrollRouter = router({
       const db = await requirePayrollDb();
       return db.select().from(payrollTables.employeeSalarySettings).where(eq(payrollTables.employeeSalarySettings.employeeId, input.employeeId)).orderBy(desc(payrollTables.employeeSalarySettings.effectiveFrom));
     }),
-    create: protectedProcedure.input(z.object({ employeeId: z.number().int().positive(), effectiveFrom: dateSchema, effectiveTo: dateSchema.nullable().optional(), salaryType: z.enum(["daily", "hourly", "monthly", "special"]), dailyRate: optionalAmountSchema, hourlyRate: optionalAmountSchema, monthlyRate: optionalAmountSchema, mealAllowance: amountSchema.default("100.00"), supervisorAllowance: amountSchema.default("0.00"), drivingAllowance: amountSchema.default("0.00"), transportationAllowance: amountSchema.default("0.00"), otherAllowance: amountSchema.default("0.00"), overtimeMode: z.enum(["manual", "hourly_multiplier", "fixed"]).default("manual"), overtimeMultiplier: amountSchema.default("1.00"), overtimeFixedRate: optionalAmountSchema,
-    })).mutation(async ({ ctx, input }) => {
+    create: protectedProcedure.input(z.object({ employeeId: z.number().int().positive() }).merge(salaryConfigurationSchema)).mutation(async ({ ctx, input }) => {
       assertPayrollManager(ctx.user);
       const db = await requirePayrollDb();
       const result = await db.insert(payrollTables.employeeSalarySettings).values(input);
       const id = Number(result[0].insertId);
+      await recordSalaryAdjustment({ employeeId: input.employeeId, salarySettingId: id, adjustedByUserId: ctx.user.id, effectiveDate: input.effectiveFrom, previousConfig: null, newConfig: input });
       await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "salary_setting", entityId: id, action: "create", afterData: input });
       return { id };
     }),
@@ -378,7 +495,21 @@ export const payrollRouter = router({
       const db = await requirePayrollDb();
       const conditions = [eq(payrollTables.payrollRuns.payrollPeriodId, input.payrollPeriodId)];
       if (employeeId) conditions.push(eq(payrollTables.payrollRuns.employeeId, employeeId));
-      return db.select().from(payrollTables.payrollRuns).where(and(...conditions)).orderBy(asc(payrollTables.payrollRuns.employeeId));
+      const rows = await db.select().from(payrollTables.payrollRuns).where(and(...conditions)).orderBy(asc(payrollTables.payrollRuns.employeeId));
+      if (!rows.length) return rows.map((run) => ({ ...run, summary: { base: "0.00", meal: "0.00", overtime: "0.00", bonuses: "0.00", deductions: "0.00" } }));
+      const lineItems = await db.select().from(payrollTables.payrollLineItems).where(and(...rows.map((run) => eq(payrollTables.payrollLineItems.payrollRunId, run.id))));
+      return rows.map((run) => {
+        const summary = { base: 0, meal: 0, overtime: 0, bonuses: 0, deductions: 0 };
+        lineItems.filter((line) => line.payrollRunId === run.id).forEach((line) => {
+          const amount = Number(line.amount);
+          if (line.direction === "deduction") summary.deductions += amount;
+          else if (["base_salary", "daily_wage", "hourly_wage"].includes(line.category)) summary.base += amount;
+          else if (line.category === "meal") summary.meal += amount;
+          else if (line.category === "overtime") summary.overtime += amount;
+          else if (["bonus", "perfect_attendance", "other_income"].includes(line.category)) summary.bonuses += amount;
+        });
+        return { ...run, summary: Object.fromEntries(Object.entries(summary).map(([key, value]) => [key, value.toFixed(2)])) as { base: string; meal: string; overtime: string; bonuses: string; deductions: string } };
+      });
     }),
     calculate: protectedProcedure.input(z.object({ payrollPeriodId: z.number().int().positive(), employeeId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
       assertPayrollManager(ctx.user);
