@@ -11,7 +11,7 @@ const dbMock = vi.hoisted(() => ({
 
 vi.mock("./db", () => dbMock);
 
-import { cmsRouter } from "./cms";
+import { cmsRouter, CMS_SENSITIVE_SETTING_KEYS, filterCmsSettingsForClient } from "./cms";
 
 const caller = cmsRouter.createCaller({
   req: {} as never,
@@ -28,9 +28,11 @@ describe("CMS settings router 白名單隔離", () => {
   });
 
   it("get、update 與 updateBatch 會在輸入驗證階段拒絕敏感鍵", async () => {
-    await expect(caller.settings.get({ key: "smtp_password" } as never)).rejects.toThrow();
-    await expect(caller.settings.update({ key: "openai_api_key", value: "secret" } as never)).rejects.toThrow();
-    await expect(caller.settings.updateBatch({ settings: { cloudflare_api_token: "secret" } } as never)).rejects.toThrow();
+    for (const key of CMS_SENSITIVE_SETTING_KEYS) {
+      await expect(caller.settings.get({ key } as never)).rejects.toThrow();
+      await expect(caller.settings.update({ key, value: "secret" } as never)).rejects.toThrow();
+      await expect(caller.settings.updateBatch({ settings: { [key]: "secret" } } as never)).rejects.toThrow();
+    }
     expect(dbMock.updateSetting).not.toHaveBeenCalled();
   });
 
@@ -44,8 +46,15 @@ describe("CMS settings router 白名單隔離", () => {
       lineUrl: "",
       facebookUrl: "",
     });
-    expect(settings).not.toHaveProperty("smtp_password");
-    expect(settings).not.toHaveProperty("openai_api_key");
+    for (const key of CMS_SENSITIVE_SETTING_KEYS) expect(settings).not.toHaveProperty(key);
+  });
+
+  it("客戶端設定過濾器會隔離所有列管的敏感鍵", () => {
+    const filtered = filterCmsSettingsForClient([
+      { key: "site_name", value: "潔特務清潔" },
+      ...CMS_SENSITIVE_SETTING_KEYS.map((key) => ({ key, value: "must-not-leak" })),
+    ]);
+    expect(filtered).toEqual([{ key: "site_name", value: "潔特務清潔" }]);
   });
 
   it("公開網站設定缺值時維持空白，不回退至硬編碼品牌或聯繫資料", async () => {

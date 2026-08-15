@@ -14,10 +14,20 @@ export type AllowedRoles = "super_admin" | "admin" | "manager" | "customer_servi
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
 const CMS_SETTING_KEYS = ["site_name", "site_description", "logo_url", "contact_image_url", "company_phone", "company_fax", "company_email", "line_id", "line_url", "company_address", "facebook_url", "instagram_url", "google_map_embed", "google_map_url", "ga_id", "meta_pixel_id", "copyright_text"] as const;
+/** 僅能由伺服器端環境變數／秘密管理服務使用，絕不可進入 CMS 資料流。 */
+export const CMS_SENSITIVE_SETTING_KEYS = [
+  "smtp_password",
+  "openai_api_key",
+  "cloudflare_api_key",
+  "cloudflare_api_token",
+] as const;
 export const cmsSettingKeySchema = z.enum(CMS_SETTING_KEYS);
 
 export function filterCmsSettingsForClient<T extends { key: string }>(items: T[]) {
-  return items.filter((item) => CMS_SETTING_KEYS.includes(item.key as (typeof CMS_SETTING_KEYS)[number]));
+  return items.filter((item) => (
+    CMS_SETTING_KEYS.includes(item.key as (typeof CMS_SETTING_KEYS)[number])
+    && !CMS_SENSITIVE_SETTING_KEYS.includes(item.key as (typeof CMS_SENSITIVE_SETTING_KEYS)[number])
+  ));
 }
 
 export function validateCmsSettingValue(key: z.infer<typeof cmsSettingKeySchema>, value: string) {
