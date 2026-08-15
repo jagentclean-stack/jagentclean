@@ -142,7 +142,7 @@
 - [ ] 前台動態化測試
 - [ ] 效能優化
 - [ ] 安全性檢查
-- [ ] SEO 驗證
+- [x] SEO 驗證
 
 ## SEO 基礎建置
 - [x] 建立公開頁 Meta、Canonical 與 Open Graph 動態管理機制
