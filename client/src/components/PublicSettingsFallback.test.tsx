@@ -56,7 +56,7 @@ afterEach(() => {
 });
 
 describe("公開設定元件", () => {
-  it("Header 在沒有設定時不輸出品牌或 Logo 備援；設定存在時只輸出 CMS 品牌", () => {
+  it("Header 在沒有設定時不輸出品牌或 Logo 備援；完整字標存在時不重複輸出 CMS 品牌名稱", () => {
     const first = render(<Header />);
     expect(first.container.textContent).not.toContain("資料庫品牌");
     expect(first.container.querySelector("img")).toBeNull();
@@ -65,8 +65,8 @@ describe("公開設定元件", () => {
 
     state.siteSettings = { siteName: "資料庫品牌", logoUrl: "/cms-logo.webp" };
     render(<Header />);
-    expect(screen.getByText("資料庫品牌")).toBeTruthy();
     expect(screen.getByAltText("資料庫品牌 Logo").getAttribute("src")).toBe("/cms-logo.webp");
+    expect(screen.queryByText("資料庫品牌")).toBeNull();
   });
 
   it("Footer 在沒有設定時不輸出聯繫備援；設定存在時只輸出 CMS 聯繫資料", () => {
