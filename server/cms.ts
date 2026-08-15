@@ -222,7 +222,7 @@ export const cmsRouter = router({
    */
   dashboard: protectedProcedure.query(async ({ ctx }) => {
     // 只允許管理員存取
-    if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+    if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "DASHBOARD_READ")) {
       throw new Error("Unauthorized");
     }
 
@@ -323,7 +323,7 @@ export const cmsRouter = router({
    */
   services: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "editor")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SERVICES_READ")) {
         throw new Error("Unauthorized");
       }
       return db.getAllServices();
@@ -332,7 +332,7 @@ export const cmsRouter = router({
     getBySlug: protectedProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SERVICES_READ")) {
           throw new Error("Unauthorized");
         }
         return db.getServiceBySlug(input.slug);
@@ -361,7 +361,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SERVICES_CREATE")) {
           throw new Error("Unauthorized");
         }
         return db.createService(input as any);
@@ -391,7 +391,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SERVICES_UPDATE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -403,7 +403,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SERVICES_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteService(input.id);
@@ -415,7 +415,7 @@ export const cmsRouter = router({
    */
   bookings: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "manager", "customer_service")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BOOKINGS_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllBookings();
@@ -424,7 +424,7 @@ export const cmsRouter = router({
     getByStatus: protectedProcedure
       .input(z.object({ status: z.enum(BOOKING_STATUSES) }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "manager", "customer_service")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BOOKINGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.getBookingsByStatus(input.status);
@@ -443,7 +443,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "manager", "customer_service")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BOOKINGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createBooking({
@@ -464,7 +464,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "manager", "customer_service")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BOOKINGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -477,7 +477,7 @@ export const cmsRouter = router({
    */
   contacts: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "manager", "customer_service")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CONTACTS_READ")) {
         throw new Error("Unauthorized");
       }
       return db.getAllContacts();
@@ -486,7 +486,7 @@ export const cmsRouter = router({
     markAsRead: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "customer_service")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CONTACTS_UPDATE")) {
           throw new Error("Unauthorized");
         }
         return db.updateContact(input.id, { isRead: true });
@@ -498,7 +498,7 @@ export const cmsRouter = router({
    */
   media: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "editor")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MEDIA_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllMedia();
@@ -507,7 +507,7 @@ export const cmsRouter = router({
     getByCategory: protectedProcedure
       .input(z.object({ category: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MEDIA_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.getMediaByCategory(input.category);
@@ -525,7 +525,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MEDIA_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createMedia({
@@ -546,7 +546,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MEDIA_MANAGE")) {
           throw new Error("Unauthorized");
         }
 
@@ -581,7 +581,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MEDIA_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -591,7 +591,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MEDIA_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteMedia(input.id);
@@ -603,7 +603,7 @@ export const cmsRouter = router({
    */
   settings: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SETTINGS_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return filterCmsSettingsForClient(await db.getSettingsByKeys(CMS_SETTING_KEYS));
@@ -612,7 +612,7 @@ export const cmsRouter = router({
     get: protectedProcedure
       .input(z.object({ key: cmsSettingKeySchema }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SETTINGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.getSetting(input.key);
@@ -621,7 +621,7 @@ export const cmsRouter = router({
     update: protectedProcedure
       .input(z.object({ key: cmsSettingKeySchema, value: z.string().max(10_000) }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SETTINGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         validateCmsSettingValue(input.key, input.value);
@@ -630,7 +630,7 @@ export const cmsRouter = router({
     updateBatch: protectedProcedure
       .input(z.object({ settings: z.record(cmsSettingKeySchema, z.string().max(10_000)) }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SETTINGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         Object.entries(input.settings).forEach(([key, value]) => validateCmsSettingValue(key as z.infer<typeof cmsSettingKeySchema>, value));
@@ -644,7 +644,7 @@ export const cmsRouter = router({
    */
   cases: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CASES_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllCases();
@@ -653,7 +653,7 @@ export const cmsRouter = router({
     getBySlug: protectedProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CASES_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.getCaseBySlug(input.slug);
@@ -680,7 +680,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CASES_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createCase(input as any);
@@ -708,7 +708,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CASES_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -718,7 +718,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CASES_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteCase(input.id);
@@ -730,7 +730,7 @@ export const cmsRouter = router({
    */
   blogs: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BLOGS_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllBlogs();
@@ -739,7 +739,7 @@ export const cmsRouter = router({
     getBySlug: protectedProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BLOGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.getBlogBySlug(input.slug);
@@ -763,7 +763,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BLOGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createBlog({
@@ -792,7 +792,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BLOGS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -805,7 +805,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "BLOGS_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteBlog(input.id);
@@ -817,7 +817,7 @@ export const cmsRouter = router({
     list: protectedProcedure
       .input(z.object({ type: z.enum(["blog", "case", "faq"]).optional() }).optional())
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CATEGORIES_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return input?.type ? db.getCategoriesByType(input.type) : db.getAllCategories();
@@ -831,7 +831,7 @@ export const cmsRouter = router({
         order: z.number().int().min(0).max(100_000).default(0),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CATEGORIES_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createCategory(input as any);
@@ -845,7 +845,7 @@ export const cmsRouter = router({
         order: z.number().int().min(0).max(100_000).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor", "marketing")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CATEGORIES_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -854,7 +854,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "CATEGORIES_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteCategory(input.id);
@@ -866,7 +866,7 @@ export const cmsRouter = router({
    */
   faqs: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FAQS_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllFAQs();
@@ -884,7 +884,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FAQS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         await assertValidFAQServiceLink(input.serviceId);
@@ -905,7 +905,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FAQS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -917,7 +917,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FAQS_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteFAQ(input.id);
@@ -929,7 +929,7 @@ export const cmsRouter = router({
    */
   menus: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MENUS_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllMenus();
@@ -947,7 +947,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MENUS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createMenu(input);
@@ -966,7 +966,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MENUS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -976,7 +976,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "manager")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "MENUS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteMenu(input.id);
@@ -988,7 +988,7 @@ export const cmsRouter = router({
    */
   seo: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, "admin", "editor")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SEO_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllSEO();
@@ -997,7 +997,7 @@ export const cmsRouter = router({
     getBySlug: protectedProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SEO_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.getSEOBySlug(input.slug);
@@ -1015,7 +1015,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "SEO_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -1028,7 +1028,7 @@ export const cmsRouter = router({
    */
   users: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "USERS_MANAGE")) throw new Error("Unauthorized");
       return db.getAllUsers();
     }),
     create: protectedProcedure
@@ -1039,7 +1039,7 @@ export const cmsRouter = router({
         initialPassword: z.string().min(12, "初始密碼至少需要 12 個字元").max(128),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "USERS_MANAGE")) throw new Error("Unauthorized");
         if (input.role === "super_admin" && !isHighestAdmin(ctx.user?.email)) throw new Error("只有最高權限管理員可建立 Super Admin");
         const email = input.email.toLowerCase();
         if (await db.getUserByEmail(email)) throw new Error("此 Email 已建立員工帳號");
@@ -1063,7 +1063,7 @@ export const cmsRouter = router({
         }).refine((input) => input.id !== undefined || input.email !== undefined, "請提供使用者 ID 或 Email")
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "USERS_MANAGE")) throw new Error("Unauthorized");
         if (input.role === "super_admin" && !isHighestAdmin(ctx.user?.email)) throw new Error("只有最高權限管理員可授予 Super Admin");
         const user = input.id !== undefined
           ? (await db.getAllUsers()).find((candidate) => candidate.id === input.id)
@@ -1081,7 +1081,7 @@ export const cmsRouter = router({
         newPassword: z.string().min(12, "重設密碼至少需要 12 個字元").max(128).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "USERS_MANAGE")) throw new Error("Unauthorized");
         const user = (await db.getAllUsers()).find((candidate) => candidate.id === input.id);
         if (!user) throw new Error("User not found");
         if ((user.role === "super_admin" || isHighestAdmin(user.email)) && !isHighestAdmin(ctx.user?.email)) {
@@ -1100,7 +1100,7 @@ export const cmsRouter = router({
     setActive: protectedProcedure
       .input(z.object({ id: z.number().int().positive(), isActive: z.boolean() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "super_admin", "admin")) throw new Error("Unauthorized");
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "USERS_MANAGE")) throw new Error("Unauthorized");
         const user = (await db.getAllUsers()).find((candidate) => candidate.id === input.id);
         if (!user) throw new Error("User not found");
         if (user.role === "super_admin" || isHighestAdmin(user.email)) throw new Error("最高權限管理員帳號不可停用");
@@ -1114,7 +1114,7 @@ export const cmsRouter = router({
    */
   hero: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "HERO_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllHeroes();
@@ -1133,7 +1133,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "HERO_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createHero(input);
@@ -1153,7 +1153,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "HERO_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -1162,7 +1162,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "HERO_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteHero(input.id);
@@ -1173,7 +1173,7 @@ export const cmsRouter = router({
    */
   footer: router({
     get: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FOOTER_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getFooter();
@@ -1192,7 +1192,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FOOTER_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createFooter(input);
@@ -1212,7 +1212,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "editor")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FOOTER_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -1221,7 +1221,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FOOTER_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteFooter(input.id);
@@ -1233,7 +1233,7 @@ export const cmsRouter = router({
    */
   reviews: router({
     list: protectedProcedure.query(async ({ ctx }) => {
-      if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "marketing")) {
+      if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "REVIEWS_MANAGE")) {
         throw new Error("Unauthorized");
       }
       return db.getAllReviews();
@@ -1251,7 +1251,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "marketing")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "REVIEWS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         return db.createReview(input as any);
@@ -1270,7 +1270,7 @@ export const cmsRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin", "marketing")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "REVIEWS_MANAGE")) {
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
@@ -1280,7 +1280,7 @@ export const cmsRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        if (!checkRole(ctx.user?.role, ctx.user?.email, "admin")) {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "REVIEWS_DELETE")) {
           throw new Error("Unauthorized");
         }
         return db.deleteReview(input.id);

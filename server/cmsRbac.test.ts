@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { canAccessCmsPermission, CMS_PERMISSIONS, normalizeCmsRole, resolveCmsPermission } from "./cms";
 
 describe("CMS RBAC permission matrix", () => {
@@ -53,5 +55,11 @@ describe("CMS RBAC permission matrix", () => {
   it("不會將未知角色或一般使用者授權為 CMS 管理者", () => {
     expect(canAccessCmsPermission("user", "user@example.com", "DASHBOARD_READ")).toBe(false);
     expect(canAccessCmsPermission("unknown_role", "unknown@example.com", "BLOGS_MANAGE")).toBe(false);
+  });
+
+  it("所有 CMS 路由均直接使用具名權限矩陣，而非分散角色白名單", () => {
+    const cmsSource = readFileSync(resolve(import.meta.dirname, "cms.ts"), "utf8");
+    expect(cmsSource).not.toMatch(/checkRole\(ctx\.user/);
+    expect(cmsSource.match(/canAccessCmsPermission\(ctx\.user/g)?.length).toBeGreaterThan(60);
   });
 });

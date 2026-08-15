@@ -69,10 +69,10 @@
 ## 第五階段：系統設定與高級功能
 - [x] 網站設定（Logo、公司名稱、聯繫資訊、GA4、Meta Pixel）
 - [x] 員工管理（新增、角色分配、停用／啟用）
-- [ ] 將 CMS 各功能的 read、create、update、delete、publish 行為收斂至可審核的中央權限矩陣，避免路由內分散角色白名單
+- [x] 將 CMS 各功能的 read、create、update、delete、publish 行為收斂至可審核的中央權限矩陣，避免路由內分散角色白名單
 - [ ] 權限管理（細粒度的角色權限控制）
 - [x] 正規化 CMS 角色檢查，確保 super_admin 可繼承所有管理權限，並安全處理歷史 manager 角色別名
-- [ ] 將 CMS 各功能的 read、create、update、delete、publish 行為收斂至可審核的中央權限矩陣，避免路由內分散角色白名單
+- [x] 將 CMS 各功能的 read、create、update、delete、publish 行為收斂至可審核的中央權限矩陣，避免路由內分散角色白名單
 - [ ] AI 文案生成（FB、IG、LINE、Google 商家貼文）
 - [ ] AI 圖片分類與優化
 
