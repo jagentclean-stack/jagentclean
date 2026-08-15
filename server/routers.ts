@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import nodemailer from "nodemailer";
 import { cmsRouter } from "./cms";
+import { payrollRouter } from "./payroll";
 import type { User } from "../drizzle/schema";
 
 export type PublicSessionUser = Pick<User, "id" | "openId" | "name" | "email" | "loginMethod" | "role" | "isActive" | "createdAt" | "updatedAt" | "lastSignedIn">;
@@ -86,6 +87,7 @@ export const appRouter = router({
 
   // CMS Dashboard
   cms: cmsRouter,
+  payroll: payrollRouter,
 });
 
 export type AppRouter = typeof appRouter;

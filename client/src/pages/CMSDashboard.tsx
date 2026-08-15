@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Loader2, BarChart3, Package, FileText, Calendar, Mail, Image as ImageIcon, Settings, Zap, CircleDollarSign, UsersRound } from "lucide-react";
+import { Loader2, BarChart3, Package, FileText, Calendar, Mail, Image as ImageIcon, Settings, Zap, CircleDollarSign, UsersRound, Banknote } from "lucide-react";
 
 const ADMIN_EMAILS = ["jagentclean@gmail.com", "emilyku0jj@gmail.com"];
 
@@ -172,6 +172,12 @@ export default function CMSDashboard() {
                 <Button variant="outline" className="w-full justify-start">
                   <UsersRound className="w-4 h-4 mr-2" />
                   員工管理
+                </Button>
+              </Link>
+              <Link href="/hr">
+                <Button variant="outline" className="w-full justify-start">
+                  <Banknote className="w-4 h-4 mr-2" />
+                  人事薪資系統
                 </Button>
               </Link>
               <Link href="/cms/cases">

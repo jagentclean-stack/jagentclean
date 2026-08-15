@@ -57,6 +57,34 @@
       "when": 1786717178437,
       "tag": "0007_warm_shaman",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1786758638135,
+      "tag": "0008_rapid_korath",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1786759316243,
+      "tag": "0009_new_jasper_sitwell",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1786759620385,
+      "tag": "0010_busy_cyclops",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1786760494860,
+      "tag": "0011_tranquil_rockslide",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE `payroll_periods` ADD `periodType` enum('first_half','second_half','monthly','custom') DEFAULT 'custom' NOT NULL;

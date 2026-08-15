@@ -10,7 +10,8 @@ import {
   json,
   datetime,
   longtext,
-  unique
+  unique,
+  index
 } from "drizzle-orm/mysql-core";
 
 /**
@@ -30,7 +31,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   passwordHash: varchar("passwordHash", { length: 255 }),
-  role: mysqlEnum("role", ["super_admin", "admin", "manager", "customer_service", "marketing", "editor", "user"]).default("user").notNull(),
+  role: mysqlEnum("role", ["super_admin", "admin", "manager", "customer_service", "marketing", "editor", "accountant", "supervisor", "employee", "user"]).default("user").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -419,3 +420,305 @@ export const footer = mysqlTable("footer", {
 
 export type Footer = typeof footer.$inferSelect;
 export type InsertFooter = typeof footer.$inferInsert;
+
+/** 人事薪資管理系統的可維護組織資料。 */
+export const departments = mysqlTable("departments", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 120 }).notNull().unique(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const positions = mysqlTable("positions", {
+  id: int("id").autoincrement().primaryKey(),
+  departmentId: int("departmentId"),
+  name: varchar("name", { length: 120 }).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("positions_department_idx").on(table.departmentId), unique("positions_department_name_unique").on(table.departmentId, table.name)]);
+
+/**
+ * 人事薪資管理系統：員工主檔。身分證與帳號僅儲存經伺服器端加密的值，
+ * 不會經由一般 CMS 或公開 API 輸出。
+ */
+export const employees = mysqlTable("employees", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  employeeCode: varchar("employeeCode", { length: 32 }).unique(),
+  name: varchar("name", { length: 120 }).notNull(),
+  nickname: varchar("nickname", { length: 120 }),
+  phone: varchar("phone", { length: 32 }),
+  email: varchar("email", { length: 320 }),
+  nationalIdEncrypted: varchar("nationalIdEncrypted", { length: 512 }),
+  gender: mysqlEnum("gender", ["female", "male", "other", "unspecified"]),
+  birthDate: varchar("birthDate", { length: 10 }),
+  address: text("address"),
+  emergencyContactName: varchar("emergencyContactName", { length: 120 }),
+  emergencyContactPhone: varchar("emergencyContactPhone", { length: 32 }),
+  departmentId: int("departmentId"),
+  positionId: int("positionId"),
+  jobTitle: varchar("jobTitle", { length: 120 }),
+  hireDate: varchar("hireDate", { length: 10 }).notNull(),
+  terminationDate: varchar("terminationDate", { length: 10 }),
+  employmentStatus: mysqlEnum("employmentStatus", ["active", "inactive", "leave_of_absence", "terminated"]).default("active").notNull(),
+  bankName: varchar("bankName", { length: 120 }),
+  bankAccountEncrypted: varchar("bankAccountEncrypted", { length: 512 }),
+  bankAccountLast4: varchar("bankAccountLast4", { length: 4 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("employees_user_idx").on(table.userId), index("employees_status_idx").on(table.employmentStatus), index("employees_department_idx").on(table.departmentId), index("employees_position_idx").on(table.positionId)]);
+
+export type Employee = typeof employees.$inferSelect;
+export type InsertEmployee = typeof employees.$inferInsert;
+
+/** 每位員工可有多個有效期間的獨立薪資設定，不在程式碼中硬編薪資。 */
+export const employeeSalarySettings = mysqlTable("employee_salary_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  effectiveFrom: varchar("effectiveFrom", { length: 10 }).notNull(),
+  effectiveTo: varchar("effectiveTo", { length: 10 }),
+  salaryType: mysqlEnum("salaryType", ["daily", "hourly", "monthly", "special"]).notNull(),
+  dailyRate: decimal("dailyRate", { precision: 12, scale: 2 }),
+  hourlyRate: decimal("hourlyRate", { precision: 12, scale: 2 }),
+  monthlyRate: decimal("monthlyRate", { precision: 12, scale: 2 }),
+  mealAllowance: decimal("mealAllowance", { precision: 12, scale: 2 }).default("100.00").notNull(),
+  supervisorAllowance: decimal("supervisorAllowance", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  drivingAllowance: decimal("drivingAllowance", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  transportationAllowance: decimal("transportationAllowance", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  otherAllowance: decimal("otherAllowance", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  overtimeMode: mysqlEnum("overtimeMode", ["manual", "hourly_multiplier", "fixed"]).default("manual").notNull(),
+  overtimeMultiplier: decimal("overtimeMultiplier", { precision: 6, scale: 2 }).default("1.00").notNull(),
+  overtimeFixedRate: decimal("overtimeFixedRate", { precision: 12, scale: 2 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("salary_settings_employee_effective_idx").on(table.employeeId, table.effectiveFrom)]);
+
+export type EmployeeSalarySetting = typeof employeeSalarySettings.$inferSelect;
+
+/** 薪資計算、審核、發薪所共同使用的月份與狀態。 */
+export const payrollPeriods = mysqlTable("payroll_periods", {
+  id: int("id").autoincrement().primaryKey(),
+  label: varchar("label", { length: 32 }).notNull().unique(),
+  periodStart: varchar("periodStart", { length: 10 }).notNull(),
+  periodEnd: varchar("periodEnd", { length: 10 }).notNull(),
+  periodType: mysqlEnum("periodType", ["first_half", "second_half", "monthly", "custom"]).default("custom").notNull(),
+  status: mysqlEnum("status", ["draft", "pending_review", "confirmed", "pending_payment", "paid"]).default("draft").notNull(),
+  confirmedAt: timestamp("confirmedAt"),
+  confirmedByUserId: int("confirmedByUserId"),
+  paidAt: timestamp("paidAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PayrollPeriod = typeof payrollPeriods.$inferSelect;
+
+/** 一位員工同一天可建立多筆工作時段。 */
+export const workSchedules = mysqlTable("work_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  workDate: varchar("workDate", { length: 10 }).notNull(),
+  startTime: varchar("startTime", { length: 5 }).notNull(),
+  endTime: varchar("endTime", { length: 5 }).notNull(),
+  location: varchar("location", { length: 500 }),
+  jobDescription: text("jobDescription"),
+  breakMinutes: int("breakMinutes").default(0).notNull(),
+  expectedWorkHours: decimal("expectedWorkHours", { precision: 8, scale: 2 }),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["scheduled", "completed", "cancelled"]).default("scheduled").notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("schedules_employee_date_idx").on(table.employeeId, table.workDate), index("schedules_date_idx").on(table.workDate)]);
+
+export type WorkSchedule = typeof workSchedules.$inferSelect;
+
+export const attendanceRecords = mysqlTable("attendance_records", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  scheduleId: int("scheduleId"),
+  workDate: varchar("workDate", { length: 10 }).notNull(),
+  scheduledStartTime: varchar("scheduledStartTime", { length: 5 }),
+  scheduledEndTime: varchar("scheduledEndTime", { length: 5 }),
+  actualStartTime: varchar("actualStartTime", { length: 5 }),
+  actualEndTime: varchar("actualEndTime", { length: 5 }),
+  workHours: decimal("workHours", { precision: 8, scale: 2 }).default("0.00").notNull(),
+  status: mysqlEnum("status", ["present", "leave", "day_off", "absent", "late", "early_leave", "half_day", "emergency_overtime"]).default("present").notNull(),
+  lateMinutes: int("lateMinutes").default(0).notNull(),
+  earlyLeaveMinutes: int("earlyLeaveMinutes").default(0).notNull(),
+  mealAllowance: decimal("mealAllowance", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  notes: text("notes"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("attendance_employee_date_idx").on(table.employeeId, table.workDate), index("attendance_schedule_idx").on(table.scheduleId)]);
+
+export type AttendanceRecord = typeof attendanceRecords.$inferSelect;
+
+export const overtimeRecords = mysqlTable("overtime_records", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  workDate: varchar("workDate", { length: 10 }).notNull(),
+  startTime: varchar("startTime", { length: 5 }).notNull(),
+  endTime: varchar("endTime", { length: 5 }).notNull(),
+  hours: decimal("hours", { precision: 8, scale: 2 }).notNull(),
+  multiplier: decimal("multiplier", { precision: 6, scale: 2 }).default("1.00").notNull(),
+  calculatedAmount: decimal("calculatedAmount", { precision: 12, scale: 2 }).notNull(),
+  manualAmount: decimal("manualAmount", { precision: 12, scale: 2 }),
+  approvedByUserId: int("approvedByUserId"),
+  approvedAt: timestamp("approvedAt"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  notes: text("notes"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("overtime_employee_date_idx").on(table.employeeId, table.workDate)]);
+
+export type OvertimeRecord = typeof overtimeRecords.$inferSelect;
+
+export const payrollBonuses = mysqlTable("payroll_bonuses", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  payrollPeriodId: int("payrollPeriodId").notNull(),
+  bonusDate: varchar("bonusDate", { length: 10 }).notNull(),
+  name: varchar("name", { length: 120 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  notes: text("notes"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("bonuses_employee_period_idx").on(table.employeeId, table.payrollPeriodId)]);
+
+export const employeeAdvances = mysqlTable("employee_advances", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  advanceDate: varchar("advanceDate", { length: 10 }).notNull(),
+  originalAmount: decimal("originalAmount", { precision: 12, scale: 2 }).notNull(),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["open", "settled"]).default("open").notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("advances_employee_status_idx").on(table.employeeId, table.status)]);
+
+export const advanceRepayments = mysqlTable("advance_repayments", {
+  id: int("id").autoincrement().primaryKey(),
+  advanceId: int("advanceId").notNull(),
+  payrollPeriodId: int("payrollPeriodId"),
+  repaymentDate: varchar("repaymentDate", { length: 10 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  notes: text("notes"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("advance_repayments_advance_idx").on(table.advanceId)]);
+
+export const payrollDeductions = mysqlTable("payroll_deductions", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  payrollPeriodId: int("payrollPeriodId").notNull(),
+  deductionDate: varchar("deductionDate", { length: 10 }).notNull(),
+  type: mysqlEnum("type", ["advance", "salary_advance", "labor_insurance", "health_insurance", "late", "early_leave", "absence", "other"]).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  notes: text("notes"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("deductions_employee_period_idx").on(table.employeeId, table.payrollPeriodId)]);
+
+/** 每位員工每個薪資月份一份不可直接覆寫的薪資快照。 */
+export const payrollRuns = mysqlTable("payroll_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  payrollPeriodId: int("payrollPeriodId").notNull(),
+  employeeId: int("employeeId").notNull(),
+  status: mysqlEnum("status", ["draft", "pending_review", "confirmed", "pending_payment", "paid"]).default("draft").notNull(),
+  grossPay: decimal("grossPay", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  deductionTotal: decimal("deductionTotal", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  netPay: decimal("netPay", { precision: 12, scale: 2 }).default("0.00").notNull(),
+  calculatedAt: timestamp("calculatedAt"),
+  confirmedAt: timestamp("confirmedAt"),
+  confirmedByUserId: int("confirmedByUserId"),
+  lockedAt: timestamp("lockedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [unique("payroll_runs_period_employee_unique").on(table.payrollPeriodId, table.employeeId), index("payroll_runs_status_idx").on(table.status)]);
+
+export type PayrollRun = typeof payrollRuns.$inferSelect;
+
+export const payrollLineItems = mysqlTable("payroll_line_items", {
+  id: int("id").autoincrement().primaryKey(),
+  payrollRunId: int("payrollRunId").notNull(),
+  category: mysqlEnum("category", ["base_salary", "daily_wage", "hourly_wage", "overtime", "meal", "supervisor_allowance", "driving_allowance", "transportation_allowance", "bonus", "perfect_attendance", "other_income", "advance", "labor_insurance", "health_insurance", "late", "early_leave", "absence", "other_deduction"]).notNull(),
+  direction: mysqlEnum("direction", ["income", "deduction"]).notNull(),
+  label: varchar("label", { length: 160 }).notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  sourceType: varchar("sourceType", { length: 64 }),
+  sourceId: int("sourceId"),
+  metadata: json("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("payroll_line_items_run_idx").on(table.payrollRunId)]);
+
+export const payrollPayments = mysqlTable("payroll_payments", {
+  id: int("id").autoincrement().primaryKey(),
+  payrollRunId: int("payrollRunId").notNull().unique(),
+  employeeId: int("employeeId").notNull(),
+  payrollPeriodId: int("payrollPeriodId").notNull(),
+  netAmount: decimal("netAmount", { precision: 12, scale: 2 }).notNull(),
+  paidAt: timestamp("paidAt"),
+  paymentMethod: mysqlEnum("paymentMethod", ["pending", "transfer", "cash", "other"]).default("pending").notNull(),
+  bankNameSnapshot: varchar("bankNameSnapshot", { length: 120 }),
+  bankAccountMaskedSnapshot: varchar("bankAccountMaskedSnapshot", { length: 64 }),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["pending", "transferred", "cash", "other"]).default("pending").notNull(),
+  recordedByUserId: int("recordedByUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("payments_period_status_idx").on(table.payrollPeriodId, table.status)]);
+
+/** 薪資、借支、獎金、扣款與發薪的變動均在此留下不可變更的稽核軌跡。 */
+export const payrollAuditLogs = mysqlTable("payroll_audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  actorUserId: int("actorUserId").notNull(),
+  entityType: varchar("entityType", { length: 64 }).notNull(),
+  entityId: int("entityId").notNull(),
+  action: varchar("action", { length: 64 }).notNull(),
+  reason: text("reason"),
+  beforeData: json("beforeData"),
+  afterData: json("afterData"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("payroll_audit_entity_idx").on(table.entityType, table.entityId), index("payroll_audit_actor_idx").on(table.actorUserId)]);
+
+export type PayrollAuditLog = typeof payrollAuditLogs.$inferSelect;
+
+/** 請假資料以獨立資料表保留完整期間與審核狀態。 */
+export const leaveRecords = mysqlTable("leave_records", {
+  id: int("id").autoincrement().primaryKey(),
+  employeeId: int("employeeId").notNull(),
+  leaveType: varchar("leaveType", { length: 80 }).notNull(),
+  startDate: varchar("startDate", { length: 10 }).notNull(),
+  endDate: varchar("endDate", { length: 10 }).notNull(),
+  hours: decimal("hours", { precision: 8, scale: 2 }).default("0.00").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "cancelled"]).default("pending").notNull(),
+  reason: text("reason"),
+  reviewedByUserId: int("reviewedByUserId"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("leave_employee_dates_idx").on(table.employeeId, table.startDate, table.endDate), index("leave_status_idx").on(table.status)]);
+
+/** 儀表板用的異常警示，保留處理者與處理時間，避免重要待辦遺失。 */
+export const payrollAlerts = mysqlTable("payroll_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  type: varchar("type", { length: 80 }).notNull(),
+  severity: mysqlEnum("severity", ["warning", "critical"]).default("warning").notNull(),
+  employeeId: int("employeeId"),
+  payrollPeriodId: int("payrollPeriodId"),
+  message: varchar("message", { length: 500 }).notNull(),
+  isResolved: boolean("isResolved").default(false).notNull(),
+  resolvedByUserId: int("resolvedByUserId"),
+  resolvedAt: timestamp("resolvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("payroll_alerts_active_idx").on(table.isResolved, table.severity), index("payroll_alerts_employee_idx").on(table.employeeId)]);

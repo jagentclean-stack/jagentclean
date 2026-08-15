@@ -35,6 +35,16 @@ import CMSFooter from "./pages/CMSFooter";
 import CMSReviews from "./pages/CMSReviews";
 import CMSPrices from "./pages/CMSPrices";
 import CMSUsers from "./pages/CMSUsers";
+import HRDashboard from "./pages/hr/HRDashboard";
+import HREmployees from "./pages/hr/HREmployees";
+import HRSchedule from "./pages/hr/HRSchedule";
+import HRAttendance from "./pages/hr/HRAttendance";
+import HROvertime from "./pages/hr/HROvertime";
+import HRPayroll from "./pages/hr/HRPayroll";
+import HRAdvances from "./pages/hr/HRAdvances";
+import HRCompensation from "./pages/hr/HRCompensation";
+import HRPayslip from "./pages/hr/HRPayslip";
+import HRReport from "./pages/hr/HRReport";
 
 import FloatingContactMenu from "@/components/FloatingContactMenu";
 import SEOHead from "@/components/SEOHead";
@@ -73,6 +83,17 @@ function Router() {
         <Route path={"/cms/prices"} component={CMSPrices} />
         <Route path={"/cms/users"} component={CMSUsers} />
 
+        <Route path={"/hr"} component={HRDashboard} />
+        <Route path={"/hr/employees"} component={HREmployees} />
+        <Route path={"/hr/schedule"} component={HRSchedule} />
+        <Route path={"/hr/attendance"} component={HRAttendance} />
+        <Route path={"/hr/overtime"} component={HROvertime} />
+        <Route path={"/hr/payroll"} component={HRPayroll} />
+        <Route path={"/hr/advances"} component={HRAdvances} />
+        <Route path={"/hr/compensation"} component={HRCompensation} />
+        <Route path={"/hr/payslips"} component={HRPayslip} />
+        <Route path={"/hr/reports"} component={HRReport} />
+
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
@@ -87,7 +108,7 @@ function Router() {
 
 function App() {
   const [location] = useLocation();
-  const isAdminArea = location === "/admin/login" || location === "/admin/debug" || location.startsWith("/cms");
+  const isAdminArea = location === "/admin/login" || location === "/admin/debug" || location.startsWith("/cms") || location.startsWith("/hr");
 
   return (
     <ErrorBoundary>
