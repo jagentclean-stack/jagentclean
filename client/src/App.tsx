@@ -35,6 +35,7 @@ import CMSFooter from "./pages/CMSFooter";
 import CMSReviews from "./pages/CMSReviews";
 import CMSPrices from "./pages/CMSPrices";
 import CMSUsers from "./pages/CMSUsers";
+import CMSCopywriting from "./pages/CMSCopywriting";
 import HRDashboard from "./pages/hr/HRDashboard";
 import HREmployees from "./pages/hr/HREmployees";
 import HRSchedule from "./pages/hr/HRSchedule";
@@ -82,6 +83,7 @@ function Router() {
         <Route path={"/cms/reviews"} component={CMSReviews} />
         <Route path={"/cms/prices"} component={CMSPrices} />
         <Route path={"/cms/users"} component={CMSUsers} />
+        <Route path={"/cms/copywriting"} component={CMSCopywriting} />
 
         <Route path={"/hr"} component={HRDashboard} />
         <Route path={"/hr/employees"} component={HREmployees} />

@@ -6,6 +6,7 @@ import { hashCmsUserPassword } from "./adminAuth";
 import { storagePut } from "./storage";
 import { decodeMediaUpload, mediaStorageFilename } from "./mediaUpload";
 import { BOOKING_STATUSES } from "../shared/business";
+import { cmsCopywritingInputSchema, generateCmsCopywritingDraft } from "./cmsCopywriting";
 
 // Type assertion helper for role checking
 export type AllowedRoles = "super_admin" | "admin" | "manager" | "customer_service" | "marketing" | "editor" | "user";
@@ -80,6 +81,7 @@ export const CMS_PERMISSIONS = {
   FOOTER_DELETE: ["admin"],
   REVIEWS_MANAGE: ["admin", "marketing"],
   REVIEWS_DELETE: ["admin"],
+  AI_COPY_GENERATE: ["admin", "marketing"],
 } as const satisfies Record<string, readonly AllowedRoles[]>;
 
 export type CmsPermission = keyof typeof CMS_PERMISSIONS;
@@ -208,6 +210,16 @@ async function assertValidFAQCategoryLink(categoryId: number | null | undefined)
  * 處理所有後台管理功能
  */
 export const cmsRouter = router({
+  aiCopy: router({
+    generate: protectedProcedure
+      .input(cmsCopywritingInputSchema)
+      .mutation(async ({ ctx, input }) => {
+        if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "AI_COPY_GENERATE")) {
+          throw new Error("您沒有 AI 文案草稿功能的使用權限");
+        }
+        return generateCmsCopywritingDraft(input);
+      }),
+  }),
   /** 前台可安全讀取的已發布內容，不含草稿或內部資料。 */
   publicContent: router({
     homepage: publicProcedure.query(async () => {
