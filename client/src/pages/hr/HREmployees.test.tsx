@@ -3,7 +3,13 @@ import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-const state = vi.hoisted(() => ({ updateSalary: vi.fn(), updateEmployee: vi.fn(), deleteEmployee: vi.fn() }));
+const state = vi.hoisted(() => ({
+  updateSalary: vi.fn(), updateEmployee: vi.fn(), deleteEmployee: vi.fn(),
+  canManagePayroll: true,
+  salaryConfigOptions: [] as Array<{ enabled?: boolean } | undefined>,
+  adjustmentOptions: [] as Array<{ enabled?: boolean } | undefined>,
+  payslipOptions: [] as Array<{ enabled?: boolean } | undefined>,
+}));
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
@@ -16,7 +22,7 @@ vi.mock("@/lib/trpc", () => ({
       periods: { invalidate: vi.fn() },
     } }),
     payroll: {
-      access: { useQuery: () => ({ data: { canManageOperations: true, canManagePayroll: true } }) },
+      access: { useQuery: () => ({ data: { canManageOperations: true, canManagePayroll: state.canManagePayroll } }) },
       employees: {
         list: { useQuery: () => ({ data: [{
           id: 21,
@@ -29,7 +35,7 @@ vi.mock("@/lib/trpc", () => ({
           hireDate: "2026-01-01",
           employmentStatus: "active",
         }], isLoading: false }) },
-        salaryConfig: { useQuery: () => ({ data: [{
+        salaryConfig: { useQuery: (_input: unknown, options: { enabled?: boolean }) => { state.salaryConfigOptions.push(options); return ({ data: [{
           id: 7,
           effectiveFrom: "2026-08-01",
           salaryType: "daily",
@@ -41,8 +47,8 @@ vi.mock("@/lib/trpc", () => ({
           otherAllowance: "0.00",
           overtimeMode: "hourly_multiplier",
           overtimeMultiplier: "1.50",
-        }] }) },
-        salaryAdjustmentHistory: { useQuery: () => ({ data: [{
+        }] }); } },
+        salaryAdjustmentHistory: { useQuery: (_input: unknown, options: { enabled?: boolean }) => { state.adjustmentOptions.push(options); return ({ data: [{
           id: 8,
           effectiveDate: "2026-08-01",
           createdAt: "2026-08-01T00:00:00.000Z",
@@ -50,12 +56,12 @@ vi.mock("@/lib/trpc", () => ({
           reason: "通過試用期調整日薪",
           previousConfig: { dailyRate: "1600.00", monthlyRate: null },
           newConfig: { dailyRate: "1800.00", monthlyRate: null },
-        }], isLoading: false }) },
-        payslipHistory: { useQuery: () => ({ data: [{
+        }], isLoading: false }); } },
+        payslipHistory: { useQuery: (_input: unknown, options: { enabled?: boolean }) => { state.payslipOptions.push(options); return ({ data: [{
           run: { id: 9, netPay: "25600.00", status: "paid" },
           period: { label: "2026 年 07 月", periodStart: "2026-07-01", periodEnd: "2026-07-31" },
           payment: { status: "transferred" },
-        }], isLoading: false }) },
+        }], isLoading: false }); } },
         create: { useMutation: () => ({ isPending: false, mutate: vi.fn() }) },
         update: { useMutation: () => ({ isPending: false, mutate: state.updateEmployee }) },
         delete: { useMutation: () => ({ isPending: false, mutate: state.deleteEmployee }) },
@@ -78,6 +84,10 @@ afterEach(() => {
   state.updateSalary.mockReset();
   state.updateEmployee.mockReset();
   state.deleteEmployee.mockReset();
+  state.canManagePayroll = true;
+  state.salaryConfigOptions.length = 0;
+  state.adjustmentOptions.length = 0;
+  state.payslipOptions.length = 0;
 });
 
 describe("HREmployees 員工薪資管理", () => {
@@ -121,5 +131,20 @@ describe("HREmployees 員工薪資管理", () => {
     expect(confirmSpy).toHaveBeenCalled();
     expect(state.deleteEmployee).toHaveBeenCalledWith({ id: 21 });
     confirmSpy.mockRestore();
+  });
+
+  it("主管或一般員工不可顯示或查詢其他員工的薪資設定、調整紀錄與薪資歷史", () => {
+    state.canManagePayroll = false;
+    render(<HREmployees />);
+
+    fireEvent.click(screen.getByText("林小潔"));
+    expect(screen.getByText(/薪資設定、薪資調整紀錄及薪資歷史僅限管理員與會計查閱/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "薪資設定" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "調整紀錄" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "薪資歷史" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "編輯資料" })).toBeNull();
+    expect(state.salaryConfigOptions).toContainEqual(expect.objectContaining({ enabled: false }));
+    expect(state.adjustmentOptions).toContainEqual(expect.objectContaining({ enabled: false }));
+    expect(state.payslipOptions).toContainEqual(expect.objectContaining({ enabled: false }));
   });
 });
