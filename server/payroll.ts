@@ -191,7 +191,7 @@ export const payrollRouter = router({
       return employee ? sanitizeEmployee(employee) : null;
     }),
     create: protectedProcedure.input(z.object({
-      userId: z.number().int().positive().optional().nullable(), employeeCode: z.string().max(32).optional().nullable(), name: z.string().min(1).max(120), nickname: z.string().max(120).optional().nullable(), phone: z.string().max(32).optional().nullable(), email: z.string().email().optional().nullable(), nationalId: z.string().max(32).optional().nullable(), gender: z.enum(["female", "male", "other", "unspecified"]).optional().nullable(), birthDate: dateSchema.optional().nullable(), address: z.string().max(2000).optional().nullable(), emergencyContactName: z.string().max(120).optional().nullable(), emergencyContactPhone: z.string().max(32).optional().nullable(), departmentId: z.number().int().positive().optional().nullable(), positionId: z.number().int().positive().optional().nullable(), jobTitle: z.string().max(120).optional().nullable(), hireDate: dateSchema, bankName: z.string().max(120).optional().nullable(), bankAccount: z.string().max(64).optional().nullable(), notes: z.string().max(5000).optional().nullable(),
+      userId: z.number().int().positive().optional().nullable(), employeeCode: z.string().max(32).optional().nullable(), name: z.string().min(1).max(120), nickname: z.string().max(120).optional().nullable(), phone: z.string().max(32).optional().nullable(), email: z.string().email().optional().nullable(), nationalId: z.string().max(32).optional().nullable(), gender: z.enum(["female", "male", "other", "unspecified"]).optional().nullable(), birthDate: dateSchema.optional().nullable(), address: z.string().max(2000).optional().nullable(), emergencyContactName: z.string().max(120).optional().nullable(), emergencyContactPhone: z.string().max(32).optional().nullable(), departmentId: z.number().int().positive().optional().nullable(), positionId: z.number().int().positive().optional().nullable(), jobTitle: z.string().max(120).optional().nullable(), hireDate: dateSchema, employmentStatus: z.enum(["active", "inactive", "leave_of_absence", "terminated"]).default("active"), bankName: z.string().max(120).optional().nullable(), bankAccount: z.string().max(64).optional().nullable(), notes: z.string().max(5000).optional().nullable(),
     })).mutation(async ({ ctx, input }) => {
       assertPayrollManager(ctx.user);
       const db = await requirePayrollDb();
@@ -361,7 +361,7 @@ export const payrollRouter = router({
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "找不到要編輯的出勤紀錄" });
 
       const periodStatuses: string[] = [];
-      for (const workDate of [...new Set([existing.workDate, input.workDate])]) {
+      for (const workDate of Array.from(new Set([existing.workDate, input.workDate]))) {
         const period = (await db.select().from(payrollTables.payrollPeriods).where(and(lte(payrollTables.payrollPeriods.periodStart, workDate), gte(payrollTables.payrollPeriods.periodEnd, workDate))).limit(1))[0];
         if (period) periodStatuses.push(period.status);
       }
