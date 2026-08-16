@@ -27,6 +27,18 @@ type SeoRecord = {
   noindex?: boolean | null;
 };
 
+type PublishedBlogSeo = {
+  title: string;
+  slug: string;
+  excerpt?: string | null;
+  featuredImage?: string | null;
+  publishedAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  seoKeywords?: string | null;
+};
+
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] ?? character);
 }
@@ -104,17 +116,40 @@ function isSafeCanonical(value: string | null | undefined, fallback: string) {
   }
 }
 
-export function buildSeoHead({ origin, pathname, seo, faqs = [], noindex = false, gaId, metaPixelId }: { origin: string; pathname: string; seo?: SeoRecord | null; faqs?: Array<{ question: string; answer: string | null }>; noindex?: boolean; gaId?: string; metaPixelId?: string }) {
+function toAbsoluteUrl(value: string | null | undefined, origin: string, fallback: string) {
+  if (!value) return fallback;
+  try {
+    return new URL(value, origin).toString();
+  } catch {
+    return fallback;
+  }
+}
+
+function toIsoDate(value: Date | string | null | undefined) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+export function buildSeoHead({ origin, pathname, seo, blog, faqs = [], noindex = false, gaId, metaPixelId }: { origin: string; pathname: string; seo?: SeoRecord | null; blog?: PublishedBlogSeo | null; faqs?: Array<{ question: string; answer: string | null }>; noindex?: boolean; gaId?: string; metaPixelId?: string }) {
   const page = PAGE_DETAILS[pathname] ?? { label: "頁面", summary: DEFAULT_DESCRIPTION };
+  const isBlogArticle = Boolean(blog);
+  const articleTitle = blog?.seoTitle || blog?.title;
   const canonical = isSafeCanonical(seo?.canonical, `${origin}${pathname}`);
-  const title = seo?.title || `${page.label}｜${SITE_NAME}`;
-  const description = seo?.description || page.summary;
-  const ogImage = seo?.ogImage || `${origin}/manus-storage/brand-logo_0f07bc46.png`;
+  const title = articleTitle ? `${articleTitle}｜${SITE_NAME}` : seo?.title || `${page.label}｜${SITE_NAME}`;
+  const description = blog?.seoDescription || blog?.excerpt || seo?.description || page.summary;
+  const ogImage = toAbsoluteUrl(blog?.featuredImage || seo?.ogImage, origin, `${origin}/manus-storage/brand-logo_0f07bc46.png`);
   const robots = noindex || seo?.noindex || seo?.index === false ? "noindex, nofollow" : "index, follow, max-image-preview:large";
   const breadcrumb = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [{ "@type": "ListItem", position: 1, name: "首頁", item: origin }, ...(pathname === "/" ? [] : [{ "@type": "ListItem", position: 2, name: page.label, item: canonical }])],
+    itemListElement: isBlogArticle
+      ? [
+        { "@type": "ListItem", position: 1, name: "首頁", item: origin },
+        { "@type": "ListItem", position: 2, name: "清潔知識中心", item: `${origin}/blog` },
+        { "@type": "ListItem", position: 3, name: blog!.title, item: canonical },
+      ]
+      : [{ "@type": "ListItem", position: 1, name: "首頁", item: origin }, ...(pathname === "/" ? [] : [{ "@type": "ListItem", position: 2, name: page.label, item: canonical }])],
   };
   const localBusiness = pathname === "/" ? {
     "@context": "https://schema.org",
@@ -135,6 +170,18 @@ export function buildSeoHead({ origin, pathname, seo, faqs = [], noindex = false
     "@type": "FAQPage",
     mainEntity: completeFaqs.map((faq) => ({ "@type": "Question", name: faq.question, acceptedAnswer: { "@type": "Answer", text: faq.answer } })),
   } : null;
+  const articleSchema = blog ? {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: blog.title,
+    description,
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+    image: ogImage,
+    datePublished: toIsoDate(blog.publishedAt),
+    dateModified: toIsoDate(blog.updatedAt) || toIsoDate(blog.publishedAt),
+    author: { "@type": "Organization", name: "潔特務清潔 J-Agent Cleaning", url: origin },
+    publisher: { "@type": "Organization", name: "潔特務清潔 J-Agent Cleaning", logo: { "@type": "ImageObject", url: `${origin}/manus-storage/brand-logo_0f07bc46.png` } },
+  } : null;
   const customSchema = parseSchema(seo?.schema);
   const safeGaId = gaId && /^G-[A-Z0-9]{4,32}$/i.test(gaId) ? gaId.toUpperCase() : null;
   const safeMetaPixelId = metaPixelId && /^\d{5,20}$/.test(metaPixelId) ? metaPixelId : null;
@@ -142,14 +189,14 @@ export function buildSeoHead({ origin, pathname, seo, faqs = [], noindex = false
   return [
     `<title>${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}">`,
-    `<meta name="keywords" content="${escapeHtml(seo?.keywords || "潔特務清潔, J-Agent Cleaning, 台南清潔")}">`,
+    `<meta name="keywords" content="${escapeHtml(blog?.seoKeywords || seo?.keywords || "潔特務清潔, J-Agent Cleaning, 台南清潔")}">`,
     `<meta name="robots" content="${robots}">`,
     `<link rel="canonical" href="${escapeHtml(canonical)}">`,
     `<meta property="og:title" content="${escapeHtml(title)}">`,
     `<meta property="og:description" content="${escapeHtml(description)}">`,
     `<meta property="og:url" content="${escapeHtml(canonical)}">`,
     `<meta property="og:image" content="${escapeHtml(ogImage)}">`,
-    `<meta property="og:type" content="website">`,
+    `<meta property="og:type" content="${isBlogArticle ? "article" : "website"}">`,
     `<meta name="twitter:card" content="summary_large_image">`,
     `<meta name="twitter:title" content="${escapeHtml(title)}">`,
     `<meta name="twitter:description" content="${escapeHtml(description)}">`,
@@ -157,30 +204,41 @@ export function buildSeoHead({ origin, pathname, seo, faqs = [], noindex = false
     `<script id="cms-breadcrumb-schema" type="application/ld+json">${escapeJson(breadcrumb)}</script>`,
     localBusiness ? `<script id="cms-local-business-schema" type="application/ld+json">${escapeJson(localBusiness)}</script>` : "",
     faqSchema ? `<script id="cms-faq-schema" type="application/ld+json">${escapeJson(faqSchema)}</script>` : "",
+    articleSchema ? `<script id="cms-article-schema" type="application/ld+json">${escapeJson(articleSchema)}</script>` : "",
     customSchema ? `<script id="cms-page-schema" type="application/ld+json">${escapeJson(customSchema)}</script>` : "",
     safeGaId ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${safeGaId}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${safeGaId}');</script>` : "",
     safeMetaPixelId ? `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${safeMetaPixelId}');fbq('track','PageView');</script>` : "",
   ].join("\n");
 }
 
-export function buildSeoFallbackContent(pathname: string, title: string, description: string) {
+export function buildSeoFallbackContent(pathname: string, title: string, description: string, isDynamicPublicPage = false) {
   const page = PAGE_DETAILS[pathname];
-  if (!page) return "";
+  if (!page && !isDynamicPublicPage) return "";
   return `<article data-ssr-seo-summary="true" class="sr-only"><h1>${escapeHtml(title)}</h1><p>${escapeHtml(description)}</p></article>`;
 }
 
 export async function getSeoDocument(requestUrl: string, origin: string) {
   const pathname = getPublicPathname(requestUrl);
-  const isPublicRoute = Object.prototype.hasOwnProperty.call(PAGE_DETAILS, pathname);
+  const blogPathMatch = pathname.match(/^\/blog\/([^/]+)$/);
+  let blog: Awaited<ReturnType<typeof db.getPublishedBlogBySlug>>;
+  if (blogPathMatch) {
+    try {
+      blog = await db.getPublishedBlogBySlug(decodeURIComponent(blogPathMatch[1]));
+    } catch {
+      blog = undefined;
+    }
+  }
+  const isPublicRoute = Object.prototype.hasOwnProperty.call(PAGE_DETAILS, pathname) || Boolean(blog);
   const isAdminRoute = pathname === "/admin/login" || pathname === "/admin/debug" || pathname.startsWith("/cms");
   const seo = isPublicRoute ? await db.getSEOBySlug(getSeoSlug(pathname)) : null;
   const faqs = pathname === "/faq" ? await db.getVisibleFAQs() : [];
   const trackingSettings = isPublicRoute ? await db.getSettingsByKeys(["ga_id", "meta_pixel_id"]) : [];
   const gaId = trackingSettings.find((setting) => setting.key === "ga_id")?.value ?? undefined;
   const metaPixelId = trackingSettings.find((setting) => setting.key === "meta_pixel_id")?.value ?? undefined;
-  const head = buildSeoHead({ origin, pathname, seo, faqs, noindex: isAdminRoute || !isPublicRoute, gaId, metaPixelId });
-  const title = seo?.title || `${PAGE_DETAILS[pathname]?.label || "頁面"}｜${SITE_NAME}`;
-  const description = seo?.description || PAGE_DETAILS[pathname]?.summary || DEFAULT_DESCRIPTION;
+  const head = buildSeoHead({ origin, pathname, seo, blog, faqs, noindex: isAdminRoute || !isPublicRoute, gaId, metaPixelId });
+  const articleTitle = blog?.seoTitle || blog?.title;
+  const title = articleTitle ? `${articleTitle}｜${SITE_NAME}` : seo?.title || `${PAGE_DETAILS[pathname]?.label || "頁面"}｜${SITE_NAME}`;
+  const description = blog?.seoDescription || blog?.excerpt || seo?.description || PAGE_DETAILS[pathname]?.summary || DEFAULT_DESCRIPTION;
 
-  return { pathname, isPublicRoute, isAdminRoute, head, content: isPublicRoute ? buildSeoFallbackContent(pathname, title, description) : "" };
+  return { pathname, isPublicRoute, isAdminRoute, head, content: isPublicRoute ? buildSeoFallbackContent(pathname, title, description, Boolean(blog)) : "" };
 }

@@ -512,6 +512,28 @@ export async function getBlogBySlug(slug: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+/**
+ * 僅供公開網站與搜尋引擎文件使用：依 slug 取得已發布且排程時間已到的文章。
+ * 草稿、未發布或尚未到排程時間的文章一律視為不存在，避免從公開詳情頁外洩。
+ */
+export async function getPublishedBlogBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const now = new Date();
+  const result = await db
+    .select()
+    .from(blogs)
+    .where(
+      and(
+        eq(blogs.slug, slug),
+        eq(blogs.isPublished, true),
+        or(isNull(blogs.scheduledAt), lte(blogs.scheduledAt, now))
+      )
+    )
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function createBlog(data: typeof blogs.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

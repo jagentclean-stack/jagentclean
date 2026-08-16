@@ -20,6 +20,28 @@ describe("伺服器端 SEO 文件組裝", () => {
     expect(servicesHead).not.toContain('"@type":"LocalBusiness"');
   });
 
+  it("為已發布文章輸出 Article、三層麵包屑與文章專屬 Open Graph 資料", () => {
+    const head = buildSeoHead({
+      origin: "https://example.com",
+      pathname: "/blog/how-often-to-clean-sofa",
+      blog: {
+        title: "沙發多久洗一次？",
+        slug: "how-often-to-clean-sofa",
+        excerpt: "沙發深層清潔的實用建議。",
+        featuredImage: "/manus-storage/sofa.webp",
+        publishedAt: new Date("2026-08-16T00:00:00.000Z"),
+        seoKeywords: "沙發清潔,居家清潔",
+      },
+    });
+
+    expect(head).toContain("沙發多久洗一次？｜潔特務清潔");
+    expect(head).toContain('rel="canonical" href="https://example.com/blog/how-often-to-clean-sofa"');
+    expect(head).toContain('property="og:type" content="article"');
+    expect(head).toContain('property="og:image" content="https://example.com/manus-storage/sofa.webp"');
+    expect(head).toContain('"@type":"Article"');
+    expect(head).toContain('"name":"清潔知識中心"');
+  });
+
   it("只注入符合格式的 GA4 與 Meta Pixel 追蹤碼", () => {
     const head = buildSeoHead({ origin: "https://example.com", pathname: "/", gaId: "G-ABC12345", metaPixelId: "1234567890" });
     const unsafeHead = buildSeoHead({ origin: "https://example.com", pathname: "/", gaId: "<script>", metaPixelId: "abc" });

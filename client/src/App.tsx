@@ -20,6 +20,7 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Cases = lazy(() => import("./pages/Cases"));
 const Blog = lazy(() => import("./pages/Blog"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const AdminDebug = lazy(() => import("./pages/AdminDebug"));
 const CMSDashboard = lazy(() => import("./pages/CMSDashboard"));
@@ -70,6 +71,7 @@ function Router() {
         <Route path={"/faq"} component={FAQ} />
         <Route path={"/contact"} component={Contact} />
         <Route path={"/cases"} component={Cases} />
+        <Route path={"/blog/:slug"} component={BlogPost} />
         <Route path={"/blog"} component={Blog} />
 
         <Route path={"/admin/login"} component={AdminLogin} />

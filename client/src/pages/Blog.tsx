@@ -28,10 +28,12 @@ export default function Blog() {
           <div className="grid grid-cols-1 gap-6 pt-14 md:grid-cols-2 lg:grid-cols-3">
             {blogs.map((item) => (
               <AnimatedSection key={item.id}>
-                <Card className="group flex h-full flex-col overflow-hidden border-border/70 bg-card shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-                  <div className="aspect-[4/3] overflow-hidden bg-muted">{item.featuredImage ? <img src={item.featuredImage} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">清潔知識文章</div>}</div>
-                  <div className="flex flex-1 flex-col p-6"><h2 className="text-xl font-bold text-primary">{item.title}</h2><p className="mt-4 flex-1 text-sm leading-6 text-muted-foreground">{excerpt(item.content, item.excerpt) || "閱讀潔特務整理的專業清潔建議。"}</p>{item.publishedAt && <p className="mt-5 text-xs text-muted-foreground">{new Date(item.publishedAt).toLocaleDateString("zh-TW")}</p>}</div>
-                </Card>
+                <Link href={`/blog/${item.slug}`} className="group block h-full rounded-3xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-4">
+                  <Card className="flex h-full flex-col overflow-hidden border-border/70 bg-card shadow-sm transition duration-300 group-hover:-translate-y-1 group-hover:shadow-xl">
+                    <div className="aspect-[4/3] overflow-hidden bg-muted">{item.featuredImage ? <img src={item.featuredImage} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">清潔知識文章</div>}</div>
+                    <div className="flex flex-1 flex-col p-6"><h2 className="text-xl font-bold text-primary">{item.title}</h2><p className="mt-4 flex-1 text-sm leading-6 text-muted-foreground">{excerpt(item.content, item.excerpt) || "閱讀潔特務整理的專業清潔建議。"}</p>{item.publishedAt && <p className="mt-5 text-xs text-muted-foreground">{new Date(item.publishedAt).toLocaleDateString("zh-TW")}</p>}<span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-secondary">閱讀全文 <ArrowRight className="h-4 w-4" /></span></div>
+                  </Card>
+                </Link>
               </AnimatedSection>
             ))}
           </div>

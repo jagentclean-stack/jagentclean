@@ -1,6 +1,7 @@
 import { z } from "zod";
 import * as db from "./db";
 import { createHash } from "crypto";
+import { TRPCError } from "@trpc/server";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { hashCmsUserPassword } from "./adminAuth";
 import { storageGetSignedUrl, storagePut } from "./storage";
@@ -294,6 +295,18 @@ export const cmsRouter = router({
     services: publicProcedure.query(async () => onlyPublishedServicesWithVisibleFAQs(await db.getPublishedServicesWithFAQs())),
     cases: publicProcedure.query(() => db.getPublishedCases()),
     blogs: publicProcedure.query(() => db.getPublishedBlogs()),
+    blogBySlug: publicProcedure
+      .input(z.object({ slug: z.string().trim().min(1).max(255) }))
+      .query(async ({ input }) => {
+        const blog = await db.getPublishedBlogBySlug(input.slug);
+        if (!blog) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "找不到已發布的文章",
+          });
+        }
+        return blog;
+      }),
     faqs: publicProcedure.query(() => db.getVisibleFAQs()),
     footer: publicProcedure.query(() => db.getPublishedFooter()),
     menus: publicProcedure.query(() => db.getPublicMenuTree()),

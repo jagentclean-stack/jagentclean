@@ -40,6 +40,39 @@ export function buildBreadcrumbSchema(origin: string, pathname: string) {
   };
 }
 
+export function buildBlogArticleBreadcrumbSchema(origin: string, pathname: string, title: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "首頁", item: `${origin}/` },
+      { "@type": "ListItem", position: 2, name: "清潔知識中心", item: `${origin}/blog` },
+      { "@type": "ListItem", position: 3, name: title, item: `${origin}${pathname}` },
+    ],
+  };
+}
+
+export function buildBlogArticleSchema({ origin, pathname, article, description, image }: { origin: string; pathname: string; article: { title: string; publishedAt?: Date | string | null; updatedAt?: Date | string | null }; description: string; image: string }) {
+  const safeDate = (value: Date | string | null | undefined) => {
+    if (!value) return undefined;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  };
+  const canonical = `${origin}${pathname}`;
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description,
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
+    image,
+    datePublished: safeDate(article.publishedAt),
+    dateModified: safeDate(article.updatedAt) || safeDate(article.publishedAt),
+    author: { "@type": "Organization", name: "潔特務清潔 J-Agent Cleaning", url: origin },
+    publisher: { "@type": "Organization", name: "潔特務清潔 J-Agent Cleaning" },
+  };
+}
+
 export function buildFaqSchema(items: Array<{ question: string; answer: string | null }>) {
   if (!items.length) return null;
   return {

@@ -30,6 +30,7 @@ vi.mock("@/lib/trpc", () => ({
         menus: { useQuery: () => ({ data: [] }) },
         footer: { useQuery: () => ({ data: state.footer }) },
         seo: { useQuery: () => ({ data: null }) },
+        blogBySlug: { useQuery: () => ({ data: null }) },
         faqs: { useQuery: () => ({ data: [] }) },
       },
     },
