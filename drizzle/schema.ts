@@ -674,6 +674,8 @@ export const payrollDeductions = mysqlTable("payroll_deductions", {
   id: int("id").autoincrement().primaryKey(),
   employeeId: int("employeeId").notNull(),
   payrollPeriodId: int("payrollPeriodId").notNull(),
+  /** 由借支扣回自動建立的扣款明細；每筆扣回僅能對應一筆本期扣款。 */
+  advanceRepaymentId: int("advanceRepaymentId").unique(),
   deductionDate: varchar("deductionDate", { length: 10 }).notNull(),
   type: mysqlEnum("type", ["advance", "salary_advance", "labor_insurance", "health_insurance", "late", "early_leave", "absence", "other"]).notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),

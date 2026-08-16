@@ -1,0 +1,2 @@
+ALTER TABLE `payroll_deductions` ADD `advanceRepaymentId` int;--> statement-breakpoint
+ALTER TABLE `payroll_deductions` ADD CONSTRAINT `payroll_deductions_advanceRepaymentId_unique` UNIQUE(`advanceRepaymentId`);

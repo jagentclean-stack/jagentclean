@@ -98,6 +98,16 @@ export function assertAttendanceDatesMutable(periodStatuses: string[]) {
   periodStatuses.forEach(assertPeriodIsMutable);
 }
 
+async function assertWorkDatesMutable(workDates: string[]) {
+  const db = await requirePayrollDb();
+  const periodStatuses: string[] = [];
+  for (const workDate of Array.from(new Set(workDates))) {
+    const period = (await db.select().from(payrollTables.payrollPeriods).where(and(lte(payrollTables.payrollPeriods.periodStart, workDate), gte(payrollTables.payrollPeriods.periodEnd, workDate))).limit(1))[0];
+    if (period) periodStatuses.push(period.status);
+  }
+  assertAttendanceDatesMutable(periodStatuses);
+}
+
 async function resolveEmployeeScope(userId: number, requestedEmployeeId: number | undefined, canManage: boolean) {
   if (canManage) return requestedEmployeeId;
   const employee = await getEmployeeByUserId(userId);
@@ -398,6 +408,18 @@ export const payrollRouter = router({
       await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "overtime", entityId: id, action: "create", afterData: input });
       return { id };
     }),
+    update: protectedProcedure.input(z.object({ id: z.number().int().positive(), employeeId: z.number().int().positive(), workDate: dateSchema, startTime: timeSchema, endTime: timeSchema, hours: amountSchema, multiplier: amountSchema.default("1.00"), calculatedAmount: amountSchema, manualAmount: optionalAmountSchema, notes: z.string().max(5000).optional().nullable() })).mutation(async ({ ctx, input }) => {
+      const db = await requirePayrollDb();
+      const current = (await db.select().from(payrollTables.overtimeRecords).where(eq(payrollTables.overtimeRecords.id, input.id)).limit(1))[0];
+      if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "找不到要編輯的加班紀錄" });
+      await assertOperationEmployeeScope(ctx.user.id, current.employeeId, canManageOperations(ctx.user));
+      if (!canManageOperations(ctx.user) && input.employeeId !== current.employeeId) throw new TRPCError({ code: "FORBIDDEN", message: "您只能修改自己的加班紀錄" });
+      await assertWorkDatesMutable([current.workDate, input.workDate]);
+      const { id, ...changes } = input;
+      await db.update(payrollTables.overtimeRecords).set(changes).where(eq(payrollTables.overtimeRecords.id, id));
+      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "overtime", entityId: id, action: "update", beforeData: current, afterData: changes });
+      return { success: true };
+    }),
     review: protectedProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["approved", "rejected"]), reason: z.string().max(1000).optional() })).mutation(async ({ ctx, input }) => {
       assertOperationsManager(ctx.user);
       const db = await requirePayrollDb();
@@ -470,6 +492,14 @@ export const payrollRouter = router({
   }),
 
   bonuses: router({
+    list: protectedProcedure.input(z.object({ payrollPeriodId: z.number().int().positive().optional(), employeeId: z.number().int().positive().optional() }).optional()).query(async ({ ctx, input }) => {
+      const employeeId = await resolveEmployeeScope(ctx.user.id, input?.employeeId, canManagePayroll(ctx.user));
+      const db = await requirePayrollDb();
+      const conditions = [];
+      if (input?.payrollPeriodId) conditions.push(eq(payrollTables.payrollBonuses.payrollPeriodId, input.payrollPeriodId));
+      if (employeeId) conditions.push(eq(payrollTables.payrollBonuses.employeeId, employeeId));
+      return conditions.length ? db.select().from(payrollTables.payrollBonuses).where(and(...conditions)).orderBy(desc(payrollTables.payrollBonuses.bonusDate)) : db.select().from(payrollTables.payrollBonuses).orderBy(desc(payrollTables.payrollBonuses.bonusDate));
+    }),
     create: protectedProcedure.input(z.object({ employeeId: z.number().int().positive(), payrollPeriodId: z.number().int().positive(), bonusDate: dateSchema, name: z.string().min(1).max(120), amount: amountSchema, notes: z.string().max(5000).optional().nullable() })).mutation(async ({ ctx, input }) => {
       assertPayrollManager(ctx.user);
       const period = await getPayrollPeriod(input.payrollPeriodId);
@@ -481,9 +511,29 @@ export const payrollRouter = router({
       await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "bonus", entityId: id, action: "create", afterData: input });
       return { id };
     }),
+    update: protectedProcedure.input(z.object({ id: z.number().int().positive(), employeeId: z.number().int().positive(), payrollPeriodId: z.number().int().positive(), bonusDate: dateSchema, name: z.string().min(1).max(120), amount: amountSchema, notes: z.string().max(5000).optional().nullable() })).mutation(async ({ ctx, input }) => {
+      assertPayrollManager(ctx.user);
+      const db = await requirePayrollDb();
+      const current = (await db.select().from(payrollTables.payrollBonuses).where(eq(payrollTables.payrollBonuses.id, input.id)).limit(1))[0];
+      if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "找不到要編輯的獎金／津貼" });
+      const periods = await Promise.all([getPayrollPeriod(current.payrollPeriodId), getPayrollPeriod(input.payrollPeriodId)]);
+      periods.forEach((period) => { if (!period) throw new TRPCError({ code: "NOT_FOUND", message: "找不到薪資週期" }); assertPeriodIsMutable(period.status); });
+      const { id, ...changes } = input;
+      await db.update(payrollTables.payrollBonuses).set(changes).where(eq(payrollTables.payrollBonuses.id, id));
+      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "bonus", entityId: id, action: "update", beforeData: current, afterData: changes });
+      return { success: true };
+    }),
   }),
 
   deductions: router({
+    list: protectedProcedure.input(z.object({ payrollPeriodId: z.number().int().positive().optional(), employeeId: z.number().int().positive().optional() }).optional()).query(async ({ ctx, input }) => {
+      const employeeId = await resolveEmployeeScope(ctx.user.id, input?.employeeId, canManagePayroll(ctx.user));
+      const db = await requirePayrollDb();
+      const conditions = [];
+      if (input?.payrollPeriodId) conditions.push(eq(payrollTables.payrollDeductions.payrollPeriodId, input.payrollPeriodId));
+      if (employeeId) conditions.push(eq(payrollTables.payrollDeductions.employeeId, employeeId));
+      return conditions.length ? db.select().from(payrollTables.payrollDeductions).where(and(...conditions)).orderBy(desc(payrollTables.payrollDeductions.deductionDate)) : db.select().from(payrollTables.payrollDeductions).orderBy(desc(payrollTables.payrollDeductions.deductionDate));
+    }),
     create: protectedProcedure.input(z.object({ employeeId: z.number().int().positive(), payrollPeriodId: z.number().int().positive(), deductionDate: dateSchema, type: z.enum(["advance", "salary_advance", "labor_insurance", "health_insurance", "late", "early_leave", "absence", "other"]), amount: amountSchema, notes: z.string().max(5000).optional().nullable() })).mutation(async ({ ctx, input }) => {
       assertPayrollManager(ctx.user);
       const period = await getPayrollPeriod(input.payrollPeriodId);
@@ -494,6 +544,19 @@ export const payrollRouter = router({
       const id = Number(result[0].insertId);
       await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "deduction", entityId: id, action: "create", afterData: input });
       return { id };
+    }),
+    update: protectedProcedure.input(z.object({ id: z.number().int().positive(), employeeId: z.number().int().positive(), payrollPeriodId: z.number().int().positive(), deductionDate: dateSchema, type: z.enum(["advance", "salary_advance", "labor_insurance", "health_insurance", "late", "early_leave", "absence", "other"]), amount: amountSchema, notes: z.string().max(5000).optional().nullable() })).mutation(async ({ ctx, input }) => {
+      assertPayrollManager(ctx.user);
+      const db = await requirePayrollDb();
+      const current = (await db.select().from(payrollTables.payrollDeductions).where(eq(payrollTables.payrollDeductions.id, input.id)).limit(1))[0];
+      if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "找不到要編輯的扣款" });
+      if (current.advanceRepaymentId) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "此扣款由借支扣回自動建立，請至借支管理編輯扣回紀錄。" });
+      const periods = await Promise.all([getPayrollPeriod(current.payrollPeriodId), getPayrollPeriod(input.payrollPeriodId)]);
+      periods.forEach((period) => { if (!period) throw new TRPCError({ code: "NOT_FOUND", message: "找不到薪資週期" }); assertPeriodIsMutable(period.status); });
+      const { id, ...changes } = input;
+      await db.update(payrollTables.payrollDeductions).set(changes).where(eq(payrollTables.payrollDeductions.id, id));
+      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "deduction", entityId: id, action: "update", beforeData: current, afterData: changes });
+      return { success: true };
     }),
   }),
 
@@ -510,6 +573,26 @@ export const payrollRouter = router({
       await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "advance", entityId: id, action: "create", afterData: input });
       return { id };
     }),
+    detail: protectedProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ ctx, input }) => {
+      const db = await requirePayrollDb();
+      const advance = (await db.select().from(payrollTables.employeeAdvances).where(eq(payrollTables.employeeAdvances.id, input.id)).limit(1))[0];
+      if (!advance) throw new TRPCError({ code: "NOT_FOUND", message: "找不到借支資料" });
+      await resolveEmployeeScope(ctx.user.id, advance.employeeId, canManagePayroll(ctx.user));
+      const repayments = await db.select().from(payrollTables.advanceRepayments).where(eq(payrollTables.advanceRepayments.advanceId, input.id)).orderBy(desc(payrollTables.advanceRepayments.repaymentDate));
+      return { advance, repayments };
+    }),
+    update: protectedProcedure.input(z.object({ id: z.number().int().positive(), advanceDate: dateSchema, originalAmount: amountSchema, notes: z.string().max(5000).optional().nullable() })).mutation(async ({ ctx, input }) => {
+      assertPayrollManager(ctx.user);
+      const db = await requirePayrollDb();
+      const current = (await db.select().from(payrollTables.employeeAdvances).where(eq(payrollTables.employeeAdvances.id, input.id)).limit(1))[0];
+      if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "找不到要編輯的借支資料" });
+      const balance = (await listAdvanceBalances(current.employeeId)).find((item) => item.id === input.id);
+      if (balance && Number(input.originalAmount) < Number(balance.repaidAmount)) throw new TRPCError({ code: "BAD_REQUEST", message: "借支原始金額不可低於已扣回金額" });
+      const { id, ...changes } = input;
+      await db.update(payrollTables.employeeAdvances).set({ ...changes, status: balance && Number(input.originalAmount) === Number(balance.repaidAmount) ? "settled" : "open" }).where(eq(payrollTables.employeeAdvances.id, id));
+      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "advance", entityId: id, action: "update", beforeData: current, afterData: changes });
+      return { success: true };
+    }),
     repay: protectedProcedure.input(z.object({ advanceId: z.number().int().positive(), payrollPeriodId: z.number().int().positive().optional().nullable(), repaymentDate: dateSchema, amount: amountSchema, notes: z.string().max(5000).optional().nullable() })).mutation(async ({ ctx, input }) => {
       assertPayrollManager(ctx.user);
       const db = await requirePayrollDb();
@@ -517,11 +600,25 @@ export const payrollRouter = router({
       if (!advance) throw new TRPCError({ code: "NOT_FOUND", message: "找不到借支資料" });
       const balance = (await listAdvanceBalances(advance.employeeId)).find((item) => item.id === advance.id);
       if (!balance || Number(input.amount) > Number(balance.outstandingAmount)) throw new TRPCError({ code: "BAD_REQUEST", message: "扣回金額不可大於尚欠金額" });
+      const period = input.payrollPeriodId ? await getPayrollPeriod(input.payrollPeriodId) : null;
+      if (input.payrollPeriodId && !period) throw new TRPCError({ code: "NOT_FOUND", message: "找不到薪資週期" });
+      if (period) {
+        assertPeriodIsMutable(period.status);
+        if (input.repaymentDate < period.periodStart || input.repaymentDate > period.periodEnd) throw new TRPCError({ code: "BAD_REQUEST", message: "扣回日期需落在指定薪資週期內" });
+      }
       const result = await db.insert(payrollTables.advanceRepayments).values({ ...input, createdByUserId: ctx.user.id });
       if (Number(input.amount) === Number(balance.outstandingAmount)) await db.update(payrollTables.employeeAdvances).set({ status: "settled" }).where(eq(payrollTables.employeeAdvances.id, advance.id));
       const id = Number(result[0].insertId);
-      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "advance_repayment", entityId: id, action: "create", afterData: input });
-      return { id };
+      let deductionId: number | null = null;
+      let recalculatedRunId: number | null = null;
+      if (input.payrollPeriodId) {
+        const deduction = await db.insert(payrollTables.payrollDeductions).values({ employeeId: advance.employeeId, payrollPeriodId: input.payrollPeriodId, advanceRepaymentId: id, deductionDate: input.repaymentDate, type: "advance", amount: input.amount, notes: input.notes ?? `借支扣回 #${advance.id}`, createdByUserId: ctx.user.id });
+        deductionId = Number(deduction[0].insertId);
+        const recalculated = await calculatePayrollRun(ctx.user.id, input.payrollPeriodId, advance.employeeId);
+        recalculatedRunId = recalculated.id;
+      }
+      await writePayrollAudit({ actorUserId: ctx.user.id, entityType: "advance_repayment", entityId: id, action: "create", afterData: { ...input, deductionId, recalculatedRunId } });
+      return { id, deductionId, recalculatedRunId };
     }),
   }),
 

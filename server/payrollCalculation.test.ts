@@ -63,4 +63,20 @@ describe("人事薪資 V1.0 計算引擎", () => {
     expect(result.deductionTotal).toBe("1300.00");
     expect(result.netPay).toBe("400.00");
   });
+
+  it("本期借支扣回只產生一筆借支扣款，重算後實發薪資維持正確", () => {
+    const input = {
+      salary: { salaryType: "daily" as const, dailyRate: "1600.00" },
+      attendance: [{ status: "present" as const, workHours: 8 }],
+      overtime: [],
+      advanceDeductions: [{ label: "借支扣回：#42", amount: "600.00" }],
+    };
+    const first = calculatePayroll(input);
+    const recalculated = calculatePayroll(input);
+
+    expect(first.lines.filter((item) => item.category === "advance")).toHaveLength(1);
+    expect(first.deductionTotal).toBe("600.00");
+    expect(first.netPay).toBe("1100.00");
+    expect(recalculated).toMatchObject({ deductionTotal: "600.00", netPay: "1100.00" });
+  });
 });
