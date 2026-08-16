@@ -35,6 +35,49 @@ function escapeJson(value: unknown) {
   return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
+const PUBLIC_SITE_SETTING_KEYS = [
+  "site_name", "site_description", "logo_url", "contact_image_url", "company_phone", "company_fax", "company_email",
+  "line_id", "line_url", "company_address", "facebook_url", "instagram_url", "google_map_embed", "google_map_url", "copyright_text",
+] as const;
+
+/**
+ * Public HTML may only receive the same low-risk data used by the global
+ * navigation and footer. Do not extend this with CMS, user, or payroll records.
+ */
+export async function getPublicCmsBootstrapState() {
+  const [footer, menus, settings] = await Promise.all([
+    db.getPublishedFooter(),
+    db.getPublicMenuTree(),
+    db.getSettingsByKeys([...PUBLIC_SITE_SETTING_KEYS]),
+  ]);
+  const values = Object.fromEntries(settings.map((setting) => [setting.key, setting.value || ""]));
+  return {
+    footer,
+    menus,
+    siteSettings: {
+      siteName: values.site_name || "",
+      siteDescription: values.site_description || "",
+      logoUrl: values.logo_url || null,
+      contactImageUrl: values.contact_image_url || null,
+      companyPhone: values.company_phone || "",
+      companyFax: values.company_fax || "",
+      companyEmail: values.company_email || "",
+      lineId: values.line_id || "",
+      lineUrl: values.line_url || "",
+      companyAddress: values.company_address || "",
+      facebookUrl: values.facebook_url || "",
+      instagramUrl: values.instagram_url || "",
+      googleMapEmbed: values.google_map_embed || "",
+      googleMapUrl: values.google_map_url || "",
+      copyrightText: values.copyright_text || "",
+    },
+  };
+}
+
+export function buildPublicCmsBootstrapScript(state: Awaited<ReturnType<typeof getPublicCmsBootstrapState>>) {
+  return `<script id="public-cms-bootstrap">window.__JAGENT_PUBLIC_CMS_STATE__=${escapeJson(state)};</script>`;
+}
+
 function parseSchema(value: unknown) {
   if (!value) return null;
   if (typeof value === "string") {

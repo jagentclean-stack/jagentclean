@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSeoHead, getPublicPathname, getSeoSlug } from "./seoDocument";
+import { buildPublicCmsBootstrapScript, buildSeoHead, getPublicPathname, getSeoSlug } from "./seoDocument";
 
 describe("伺服器端 SEO 文件組裝", () => {
   it("為公開頁產生頁面專屬 canonical、社群標記與麵包屑結構化資料", () => {
@@ -33,5 +33,18 @@ describe("伺服器端 SEO 文件組裝", () => {
     expect(getPublicPathname("/cases/?source=test")).toBe("/cases");
     expect(getSeoSlug("/")).toBe("home");
     expect(getSeoSlug("/services")).toBe("services");
+  });
+
+  it("安全序列化僅供公開導覽使用的 CMS 初始資料，避免腳本標籤逸出", () => {
+    const script = buildPublicCmsBootstrapScript({
+      footer: { address: "台南市" },
+      menus: [{ label: "首頁", url: "/" }],
+      siteSettings: { siteName: "潔特務</script><script>alert(1)</script>" },
+    });
+
+    expect(script).toContain('id="public-cms-bootstrap"');
+    expect(script).toContain("window.__JAGENT_PUBLIC_CMS_STATE__=");
+    expect(script).toContain("\\u003c/script>");
+    expect(script).not.toContain("</script><script>alert(1)");
   });
 });

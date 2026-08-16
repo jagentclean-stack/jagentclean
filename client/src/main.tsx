@@ -2,13 +2,23 @@ import { trpc } from "@/lib/trpc";
 import { COOKIE_NAME, UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
+import { getQueryKey } from "@trpc/react-query";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import { startLogin } from "./const";
+import { consumePublicCmsBootstrapState, enablePublicQueryCachePersistence, restorePublicQueryCache } from "./lib/publicQueryCache";
 import "./index.css";
 
 const queryClient = new QueryClient();
+const publicBootstrap = consumePublicCmsBootstrapState();
+if (publicBootstrap) {
+  queryClient.setQueryData(getQueryKey(trpc.cms.publicContent.footer), publicBootstrap.footer);
+  queryClient.setQueryData(getQueryKey(trpc.cms.publicContent.menus), publicBootstrap.menus);
+  queryClient.setQueryData(getQueryKey(trpc.cms.publicContent.siteSettings), publicBootstrap.siteSettings);
+}
+restorePublicQueryCache(queryClient);
+enablePublicQueryCachePersistence(queryClient);
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;

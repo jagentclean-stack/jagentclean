@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
-import { getSeoDocument } from "../seoDocument";
+import { buildPublicCmsBootstrapScript, getPublicCmsBootstrapState, getSeoDocument } from "../seoDocument";
 
 function requestOrigin(req: { protocol?: string; get?: (name: string) => string | undefined }) {
   const host = req.get?.("host");
@@ -16,9 +16,17 @@ export function isHtmlNavigationRequest(req: { headers?: { accept?: string | und
   return (req.headers?.accept || "").includes("text/html");
 }
 
-async function renderSeoTemplate(template: string, requestUrl: string, origin: string) {
+export async function renderNavigationDocument(template: string, requestUrl: string, origin: string) {
   const seo = await getSeoDocument(requestUrl, origin);
-  return template.replace("<!--ssr-head-->", seo.head).replace("<!--ssr-content-->", seo.content);
+  const bootstrap = seo.isPublicRoute
+    ? buildPublicCmsBootstrapScript(await getPublicCmsBootstrapState())
+    : "";
+  return {
+    html: template
+      .replace("<!--ssr-head-->", `${seo.head}${bootstrap}`)
+      .replace("<!--ssr-content-->", seo.content),
+    status: seo.isPublicRoute || seo.isAdminRoute ? 200 : 404,
+  };
 }
 
 export async function setupVite(app: Express, server: Server) {
@@ -57,10 +65,9 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
       );
-      const seo = await getSeoDocument(url, requestOrigin(req));
-      const html = template.replace("<!--ssr-head-->", seo.head).replace("<!--ssr-content-->", seo.content);
-      const page = await vite.transformIndexHtml(url, html);
-      res.status(seo.isPublicRoute || seo.isAdminRoute ? 200 : 404).set({ "Content-Type": "text/html" }).end(page);
+      const document = await renderNavigationDocument(template, url, requestOrigin(req));
+      const page = await vite.transformIndexHtml(url, document.html);
+      res.status(document.status).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
@@ -89,8 +96,8 @@ export function serveStatic(app: Express) {
   app.use("*", async (req, res, next) => {
     try {
       const template = await fs.promises.readFile(path.resolve(distPath, "index.html"), "utf-8");
-      const seo = await getSeoDocument(req.originalUrl, requestOrigin(req));
-      res.status(seo.isPublicRoute || seo.isAdminRoute ? 200 : 404).type("html").send(template.replace("<!--ssr-head-->", seo.head).replace("<!--ssr-content-->", seo.content));
+      const document = await renderNavigationDocument(template, req.originalUrl, requestOrigin(req));
+      res.status(document.status).type("html").send(document.html);
     } catch (error) {
       next(error);
     }
