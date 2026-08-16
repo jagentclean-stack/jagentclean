@@ -6,6 +6,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const testState = vi.hoisted(() => ({
   shouldReject: false,
   settingsData: [{ key: "site_name", value: "原網站名稱" }],
+  footerData: { id: 7, aboutText: "原頁尾介紹", isPublished: true },
+  footerUpdateCalls: 0,
+  lastFooterUpdate: null as unknown,
 }));
 
 vi.mock("@/_core/hooks/useAuth", () => ({
@@ -20,6 +23,7 @@ vi.mock("@/lib/trpc", () => ({
           siteSettings: { invalidate: async () => undefined },
           footer: { invalidate: async () => undefined },
         },
+        footer: { get: { invalidate: async () => undefined } },
       },
     }),
     cms: {
@@ -35,6 +39,20 @@ vi.mock("@/lib/trpc", () => ({
           }),
         },
       },
+      footer: {
+        get: { useQuery: () => ({ data: testState.footerData }) },
+        create: { useMutation: () => ({ isPending: false, mutateAsync: async () => ({ id: 8 }) }) },
+        update: {
+          useMutation: () => ({
+            isPending: false,
+            mutateAsync: async (input: unknown) => {
+              testState.footerUpdateCalls += 1;
+              testState.lastFooterUpdate = input;
+              return { success: true };
+            },
+          }),
+        },
+      },
     },
   },
 }));
@@ -45,13 +63,17 @@ afterEach(() => {
   cleanup();
   testState.shouldReject = false;
   testState.settingsData = [{ key: "site_name", value: "原網站名稱" }];
+  testState.footerData = { id: 7, aboutText: "原頁尾介紹", isPublished: true };
+  testState.footerUpdateCalls = 0;
+  testState.lastFooterUpdate = null;
 });
 
 describe("CMSSettings 批次儲存回饋", () => {
   it("批次儲存成功時顯示成功訊息", async () => {
     render(<CMSSettings />);
     fireEvent.click(screen.getByRole("button", { name: "保存設定" }));
-    expect((await screen.findByRole("status")).textContent).toContain("設定已儲存並同步至網站。");
+    expect((await screen.findByRole("status")).textContent).toContain("設定已儲存，並已同步至前台。");
+    expect(testState.footerUpdateCalls).toBe(1);
   });
 
   it("儲存失敗時顯示錯誤並保留使用者輸入", async () => {
@@ -74,5 +96,15 @@ describe("CMSSettings 批次儲存回饋", () => {
     expect(logoInput.value).toBe("/manus-storage/custom-logo.png");
     fireEvent.change(logoInput, { target: { value: "https://cdn.example.com/logo.png" } });
     expect(logoInput.value).toBe("https://cdn.example.com/logo.png");
+  });
+
+  it("在同一個入口管理頁尾介紹與發布狀態", () => {
+    render(<CMSSettings />);
+    const aboutInput = screen.getByPlaceholderText("輸入顯示於頁尾的品牌簡介") as HTMLTextAreaElement;
+    expect(aboutInput.value).toBe("原頁尾介紹");
+    expect((screen.getByRole("checkbox", { name: "發布頁尾內容" }) as HTMLInputElement).checked).toBe(true);
+    fireEvent.change(aboutInput, { target: { value: "更新後的品牌介紹" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存設定" }));
+    return waitFor(() => expect(testState.lastFooterUpdate).toEqual({ id: 7, aboutText: "更新後的品牌介紹", isPublished: true }));
   });
 });

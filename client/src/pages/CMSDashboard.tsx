@@ -256,9 +256,9 @@ export default function CMSDashboard() {
                 Hero 管理
               </Button>
             </Link>
-            <Link href="/cms/footer">
+            <Link href="/cms/settings">
               <Button variant="ghost" className="w-full">
-                Footer 管理
+                網站與頁尾設定
               </Button>
             </Link>
             <Link href="/cms/reviews">

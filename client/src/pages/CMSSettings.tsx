@@ -9,11 +9,13 @@ import { Loader2, Save } from "lucide-react";
 
 const CMS_SETTING_KEYS = ["site_name", "site_description", "logo_url", "contact_image_url", "company_phone", "company_fax", "company_email", "line_id", "line_url", "company_address", "facebook_url", "instagram_url", "google_map_embed", "google_map_url", "ga_id", "meta_pixel_id", "copyright_text"] as const;
 const ADMIN_EMAILS = new Set(["jagentclean@gmail.com", "emilyku0jj@gmail.com"]);
+type FooterContent = { id?: number; aboutText: string; isPublished: boolean };
 
 export default function CMSSettings() {
   const { user, isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
   const [settings, setSettings] = useState<Record<string, string>>({});
+  const [footerContent, setFooterContent] = useState<FooterContent>({ aboutText: "", isPublished: false });
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const canManageSettings = isAuthenticated && (user?.role === "admin" || ADMIN_EMAILS.has(user?.email ?? ""));
@@ -21,6 +23,7 @@ export default function CMSSettings() {
   const { data: settingsData, isLoading } = trpc.cms.settings.list.useQuery(undefined, {
     enabled: canManageSettings,
   });
+  const { data: footerData } = trpc.cms.footer.get.useQuery(undefined, { enabled: canManageSettings });
 
   // Update settings when data is loaded
   React.useEffect(() => {
@@ -33,7 +36,15 @@ export default function CMSSettings() {
     }
   }, [settingsData]);
 
+  React.useEffect(() => {
+    if (footerData) {
+      setFooterContent({ id: footerData.id, aboutText: footerData.aboutText || "", isPublished: Boolean(footerData.isPublished) });
+    }
+  }, [footerData]);
+
   const updateMutation = trpc.cms.settings.updateBatch.useMutation();
+  const createFooterMutation = trpc.cms.footer.create.useMutation();
+  const updateFooterMutation = trpc.cms.footer.update.useMutation();
 
   const handleInputChange = (key: string, value: string) => {
     setSettings((prev) => ({
@@ -49,11 +60,17 @@ export default function CMSSettings() {
       await updateMutation.mutateAsync({
         settings: Object.fromEntries(CMS_SETTING_KEYS.map((key) => [key, settings[key] ?? ""])) as Record<(typeof CMS_SETTING_KEYS)[number], string>,
       });
+      if (footerContent.id) {
+        await updateFooterMutation.mutateAsync({ id: footerContent.id, aboutText: footerContent.aboutText, isPublished: footerContent.isPublished });
+      } else {
+        await createFooterMutation.mutateAsync({ aboutText: footerContent.aboutText, isPublished: footerContent.isPublished });
+      }
       await Promise.all([
         utils.cms.publicContent.siteSettings.invalidate(),
         utils.cms.publicContent.footer.invalidate(),
+        utils.cms.footer.get.invalidate(),
       ]);
-      setSaveMessage({ type: "success", text: "設定已儲存並同步至網站。" });
+      setSaveMessage({ type: "success", text: "設定已儲存，並已同步至前台。" });
     } catch (error) {
       setSaveMessage({ type: "error", text: error instanceof Error ? error.message : "儲存失敗，請稍後再試。" });
     } finally {
@@ -74,9 +91,12 @@ export default function CMSSettings() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">網站設定</h1>
-          <Button onClick={handleSave} disabled={isSaving || updateMutation.isPending}>
-            {isSaving || updateMutation.isPending ? (
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">網站與頁尾設定</h1>
+            <p className="mt-1 text-sm text-gray-500">此頁是公開品牌、聯絡資訊與頁尾內容的唯一管理入口。</p>
+          </div>
+          <Button onClick={handleSave} disabled={isSaving || updateMutation.isPending || createFooterMutation.isPending || updateFooterMutation.isPending}>
+            {isSaving || updateMutation.isPending || createFooterMutation.isPending || updateFooterMutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 保存中...
@@ -228,6 +248,32 @@ export default function CMSSettings() {
                     placeholder="https://instagram.com/..."
                   />
                 </div>
+              </div>
+            </Card>
+
+            {/* 頁尾內容 */}
+            <Card className="p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-1">頁尾內容</h2>
+              <p className="mb-4 text-sm text-gray-500">地址、電話、Email、社群連結與版權文字由本頁的對應欄位統一管理。</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">頁尾品牌介紹</label>
+                  <Textarea
+                    value={footerContent.aboutText}
+                    onChange={(e) => setFooterContent((previous) => ({ ...previous, aboutText: e.target.value }))}
+                    placeholder="輸入顯示於頁尾的品牌簡介"
+                    rows={4}
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={footerContent.isPublished}
+                    onChange={(e) => setFooterContent((previous) => ({ ...previous, isPublished: e.target.checked }))}
+                    className="h-4 w-4 rounded border-gray-300 text-[#163C72] focus:ring-[#163C72]"
+                  />
+                  發布頁尾內容
+                </label>
               </div>
             </Card>
 

@@ -35,7 +35,7 @@ const CMSSEO = lazy(() => import("./pages/CMSSEO"));
 const CMSMenus = lazy(() => import("./pages/CMSMenus"));
 const CMSFAQs = lazy(() => import("./pages/CMSFAQs"));
 const CMSHero = lazy(() => import("./pages/CMSHero"));
-const CMSFooter = lazy(() => import("./pages/CMSFooter"));
+const CMSFooterRedirect = lazy(() => import("./pages/CMSFooterRedirect"));
 const CMSReviews = lazy(() => import("./pages/CMSReviews"));
 const CMSPrices = lazy(() => import("./pages/CMSPrices"));
 const CMSUsers = lazy(() => import("./pages/CMSUsers"));
@@ -87,7 +87,7 @@ function Router() {
         <Route path={"/cms/menus"} component={CMSMenus} />
         <Route path={"/cms/faqs"} component={CMSFAQs} />
         <Route path={"/cms/hero"} component={CMSHero} />
-        <Route path={"/cms/footer"} component={CMSFooter} />
+        <Route path={"/cms/footer"} component={CMSFooterRedirect} />
         <Route path={"/cms/reviews"} component={CMSReviews} />
         <Route path={"/cms/prices"} component={CMSPrices} />
         <Route path={"/cms/users"} component={CMSUsers} />

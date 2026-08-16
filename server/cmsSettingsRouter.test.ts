@@ -9,6 +9,7 @@ const dbMock = vi.hoisted(() => ({
   updateSetting: vi.fn(async () => ({ success: true })),
   getFooter: vi.fn(async () => ({ id: 7 })),
   updateFooter: vi.fn(async () => ({ success: true })),
+  getAllCmsRolePermissionOverrides: vi.fn(async () => []),
 }));
 
 vi.mock("./db", () => dbMock);
