@@ -12,6 +12,7 @@ const ADMIN_EMAILS = new Set(["jagentclean@gmail.com", "emilyku0jj@gmail.com"]);
 
 export default function CMSSettings() {
   const { user, isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -48,6 +49,10 @@ export default function CMSSettings() {
       await updateMutation.mutateAsync({
         settings: Object.fromEntries(CMS_SETTING_KEYS.map((key) => [key, settings[key] ?? ""])) as Record<(typeof CMS_SETTING_KEYS)[number], string>,
       });
+      await Promise.all([
+        utils.cms.publicContent.siteSettings.invalidate(),
+        utils.cms.publicContent.footer.invalidate(),
+      ]);
       setSaveMessage({ type: "success", text: "設定已儲存並同步至網站。" });
     } catch (error) {
       setSaveMessage({ type: "error", text: error instanceof Error ? error.message : "儲存失敗，請稍後再試。" });

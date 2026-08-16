@@ -46,4 +46,19 @@ describe("public query cache", () => {
 
     expect(memoryStorage.get(publicQueryCacheTestUtils.STORAGE_KEY) ?? null).toBeNull();
   });
+
+  it("先還原舊快取時，隨頁提供的最新 CMS 設定可以覆蓋舊版版權聲明", async () => {
+    const source = new QueryClient();
+    const unsubscribe = enablePublicQueryCachePersistence(source);
+    const key = [["cms", "publicContent", "siteSettings"], { type: "query" }];
+    source.setQueryData(key, { copyrightText: "© 2020 舊版聲明" });
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    unsubscribe();
+
+    const target = new QueryClient();
+    restorePublicQueryCache(target);
+    target.setQueryData(key, { copyrightText: "© 2026 最新聲明" });
+
+    expect(target.getQueryData(key)).toEqual({ copyrightText: "© 2026 最新聲明" });
+  });
 });

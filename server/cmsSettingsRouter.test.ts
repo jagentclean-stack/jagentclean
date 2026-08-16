@@ -7,6 +7,8 @@ const dbMock = vi.hoisted(() => ({
     { key: "smtp_password", value: "must-not-leak" },
   ]),
   updateSetting: vi.fn(async () => ({ success: true })),
+  getFooter: vi.fn(async () => ({ id: 7 })),
+  updateFooter: vi.fn(async () => ({ success: true })),
 }));
 
 vi.mock("./db", () => dbMock);
@@ -68,5 +70,48 @@ describe("CMS settings router 白名單隔離", () => {
       lineUrl: "",
       companyAddress: "",
     });
+  });
+
+  it("儲存網站設定時會同步重疊的公開頁尾欄位，避免兩個後台入口資料分歧", async () => {
+    await caller.settings.updateBatch({
+      settings: {
+        site_name: "潔特務清潔",
+        site_description: "",
+        logo_url: "",
+        contact_image_url: "",
+        company_address: "台南市安南區國安街45巷12號",
+        company_phone: "06-3584567",
+        company_fax: "",
+        company_email: "jagentclean@gmail.com",
+        line_id: "",
+        line_url: "",
+        facebook_url: "",
+        instagram_url: "",
+        google_map_embed: "",
+        google_map_url: "",
+        ga_id: "",
+        meta_pixel_id: "",
+        copyright_text: "© 2026 潔特務清潔 J-Agent Cleaning. All rights reserved.",
+      },
+    });
+
+    expect(dbMock.updateFooter).toHaveBeenCalledWith(7, {
+      address: "台南市安南區國安街45巷12號",
+      phone: "06-3584567",
+      email: "jagentclean@gmail.com",
+      copyrightText: "© 2026 潔特務清潔 J-Agent Cleaning. All rights reserved.",
+    });
+  });
+
+  it("頁尾管理更新版權時會回寫公開網站設定，讓前台使用同一份資料", async () => {
+    await caller.footer.update({
+      id: 7,
+      copyrightText: "© 2027 潔特務清潔 J-Agent Cleaning. All rights reserved.",
+    });
+
+    expect(dbMock.updateSetting).toHaveBeenCalledWith(
+      "copyright_text",
+      "© 2027 潔特務清潔 J-Agent Cleaning. All rights reserved.",
+    );
   });
 });

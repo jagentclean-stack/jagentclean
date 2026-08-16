@@ -24,6 +24,7 @@ type FooterFormData = z.infer<typeof footerSchema>;
 
 export default function CMSFooter() {
   const { user, isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<FooterFormData>({
     address: "",
@@ -41,17 +42,24 @@ export default function CMSFooter() {
     enabled: isAuthenticated && ["admin", "editor"].includes(user?.role || ""),
   });
 
+  const refreshPublicFooter = async () => {
+    await Promise.all([
+      utils.cms.publicContent.footer.invalidate(),
+      utils.cms.publicContent.siteSettings.invalidate(),
+    ]);
+  };
+
   const createMutation = trpc.cms.footer.create.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       setIsOpen(false);
-      refetch();
+      await Promise.all([refetch(), refreshPublicFooter()]);
     },
   });
 
   const updateMutation = trpc.cms.footer.update.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
       setIsOpen(false);
-      refetch();
+      await Promise.all([refetch(), refreshPublicFooter()]);
     },
   });
 
@@ -128,6 +136,7 @@ export default function CMSFooter() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">頁腳管理</h1>
       </div>
+      <p className="-mt-5 mb-8 text-sm text-gray-500">版權、地址、電話與 Email 儲存後會同步更新網站設定與公開頁尾，避免重複管理造成顯示不一致。</p>
 
       {isLoading ? (
         <div className="flex justify-center py-8">

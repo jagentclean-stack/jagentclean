@@ -14,6 +14,14 @@ vi.mock("@/_core/hooks/useAuth", () => ({
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: () => ({
+      cms: {
+        publicContent: {
+          siteSettings: { invalidate: async () => undefined },
+          footer: { invalidate: async () => undefined },
+        },
+      },
+    }),
     cms: {
       settings: {
         list: { useQuery: () => ({ data: testState.settingsData, isLoading: false }) },

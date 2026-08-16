@@ -11,13 +11,15 @@ import { consumePublicCmsBootstrapState, enablePublicQueryCachePersistence, rest
 import "./index.css";
 
 const queryClient = new QueryClient();
+// 先還原短期工作階段快取，再以每次 HTML 導覽隨附的最新伺服器資料覆蓋。
+// 若順序相反，舊的 sessionStorage 可能會在設定已儲存後重新顯示舊版頁尾文字。
+restorePublicQueryCache(queryClient);
 const publicBootstrap = consumePublicCmsBootstrapState();
 if (publicBootstrap) {
   queryClient.setQueryData(getQueryKey(trpc.cms.publicContent.footer), publicBootstrap.footer);
   queryClient.setQueryData(getQueryKey(trpc.cms.publicContent.menus), publicBootstrap.menus);
   queryClient.setQueryData(getQueryKey(trpc.cms.publicContent.siteSettings), publicBootstrap.siteSettings);
 }
-restorePublicQueryCache(queryClient);
 enablePublicQueryCachePersistence(queryClient);
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {

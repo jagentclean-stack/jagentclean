@@ -41,6 +41,43 @@ export function validateCmsSettingValue(key: z.infer<typeof cmsSettingKeySchema>
   if (key === "meta_pixel_id" && value && !/^\d{5,20}$/.test(value)) throw new Error("Meta Pixel ID 格式不正確");
 }
 
+/**
+ * 舊版 CMS 同時在「網站設定」與「頁尾管理」提供公司聯絡與版權欄位。
+ * 為避免兩份資料各自更新造成公開網站顯示不一致，這些重疊公開欄位以雙向同步
+ * 維持相同值；資料庫結構及既有頁尾介紹／快速連結資料均不受影響。
+ */
+const FOOTER_SETTING_FIELD_MAP = {
+  company_address: "address",
+  company_phone: "phone",
+  company_email: "email",
+  copyright_text: "copyrightText",
+} as const;
+
+type FooterPublicFields = {
+  address?: string;
+  phone?: string;
+  email?: string;
+  copyrightText?: string;
+};
+
+async function syncFooterFromSiteSettings(settings: Partial<Record<z.infer<typeof cmsSettingKeySchema>, string>>) {
+  const footerPatch: FooterPublicFields = {};
+  for (const [settingKey, footerField] of Object.entries(FOOTER_SETTING_FIELD_MAP) as Array<[keyof typeof FOOTER_SETTING_FIELD_MAP, keyof FooterPublicFields]>) {
+    if (Object.prototype.hasOwnProperty.call(settings, settingKey)) footerPatch[footerField] = settings[settingKey];
+  }
+  if (Object.keys(footerPatch).length === 0) return;
+
+  const existingFooter = await db.getFooter();
+  if (existingFooter) await db.updateFooter(existingFooter.id, footerPatch);
+}
+
+async function syncSiteSettingsFromFooter(footerFields: FooterPublicFields) {
+  const settingUpdates = Object.entries(FOOTER_SETTING_FIELD_MAP)
+    .map(([settingKey, footerField]) => [settingKey, footerFields[footerField as keyof FooterPublicFields]] as const)
+    .filter((entry): entry is readonly [string, string] => entry[1] !== undefined);
+  await Promise.all(settingUpdates.map(([key, value]) => db.updateSetting(key, value)));
+}
+
 export const CMS_ROLE_ALIASES = {
   manager: "admin",
 } as const;
@@ -716,7 +753,9 @@ export const cmsRouter = router({
           throw new Error("Unauthorized");
         }
         validateCmsSettingValue(input.key, input.value);
-        return db.updateSetting(input.key, input.value);
+        const result = await db.updateSetting(input.key, input.value);
+        await syncFooterFromSiteSettings({ [input.key]: input.value });
+        return result;
       }),
     updateBatch: protectedProcedure
       .input(z.object({ settings: z.record(cmsSettingKeySchema, z.string().max(10_000)) }))
@@ -726,6 +765,7 @@ export const cmsRouter = router({
         }
         Object.entries(input.settings).forEach(([key, value]) => validateCmsSettingValue(key as z.infer<typeof cmsSettingKeySchema>, value));
         await Promise.all(Object.entries(input.settings).map(([key, value]) => db.updateSetting(key, value)));
+        await syncFooterFromSiteSettings(input.settings);
         return { success: true, updatedKeys: Object.keys(input.settings) };
       }),
   }),
@@ -1286,7 +1326,9 @@ export const cmsRouter = router({
         if (!canAccessCmsPermission(ctx.user?.role, ctx.user?.email, "FOOTER_MANAGE")) {
           throw new Error("Unauthorized");
         }
-        return db.createFooter(input);
+        const result = await db.createFooter(input);
+        await syncSiteSettingsFromFooter(input);
+        return result;
       }),
     update: protectedProcedure
       .input(
@@ -1307,7 +1349,9 @@ export const cmsRouter = router({
           throw new Error("Unauthorized");
         }
         const { id, ...data } = input;
-        return db.updateFooter(id, data);
+        const result = await db.updateFooter(id, data);
+        await syncSiteSettingsFromFooter(data);
+        return result;
       }),
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
