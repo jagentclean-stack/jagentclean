@@ -32,9 +32,12 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
-  // Configure body parser with larger size limit for file uploads
+  // CMS media uses direct object storage uploads, so server form requests only
+  // need shallow key-value parsing. This avoids accepting unbounded nested
+  // query/form structures while preserving existing login and tRPC flows.
+  app.set("query parser", "simple");
   app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  app.use(express.urlencoded({ limit: "2mb", extended: false }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerAdminLoginRoutes(app);

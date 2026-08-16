@@ -1,6 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
+import { lazy, Suspense } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -8,52 +8,60 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import AIChatAdvisor from "./components/AIChatAdvisor";
 import Home from "./pages/Home";
-import About from "./pages/About";
-import Services from "./pages/Services";
-import Process from "./pages/Process";
-import Testimonials from "./pages/Testimonials";
-import FAQ from "./pages/FAQ";
-import Contact from "./pages/Contact";
-import Cases from "./pages/Cases";
-import Blog from "./pages/Blog";
-import AdminLogin from "./pages/AdminLogin";
-import AdminDebug from "./pages/AdminDebug";
-import CMSDashboard from "./pages/CMSDashboard";
-import CMSPages from "./pages/CMSPages";
-import CMSServices from "./pages/CMSServices";
-import CMSCases from "./pages/CMSCases";
-import CMSBlogs from "./pages/CMSBlogs";
-import CMSBookings from "./pages/CMSBookings";
-import CMSContacts from "./pages/CMSContacts";
-import CMSMedia from "./pages/CMSMedia";
-import CMSSettings from "./pages/CMSSettings";
-import CMSSEO from "./pages/CMSSEO";
-import CMSMenus from "./pages/CMSMenus";
-import CMSFAQs from "./pages/CMSFAQs";
-import CMSHero from "./pages/CMSHero";
-import CMSFooter from "./pages/CMSFooter";
-import CMSReviews from "./pages/CMSReviews";
-import CMSPrices from "./pages/CMSPrices";
-import CMSUsers from "./pages/CMSUsers";
-import CMSCopywriting from "./pages/CMSCopywriting";
-import HRDashboard from "./pages/hr/HRDashboard";
-import HREmployees from "./pages/hr/HREmployees";
-import HRSchedule from "./pages/hr/HRSchedule";
-import HRAttendance from "./pages/hr/HRAttendance";
-import HROvertime from "./pages/hr/HROvertime";
-import HRPayroll from "./pages/hr/HRPayroll";
-import HRAdvances from "./pages/hr/HRAdvances";
-import HRCompensation from "./pages/hr/HRCompensation";
-import HRPayslip from "./pages/hr/HRPayslip";
-import HRReport from "./pages/hr/HRReport";
-
 import FloatingContactMenu from "@/components/FloatingContactMenu";
 import SEOHead from "@/components/SEOHead";
+
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const About = lazy(() => import("./pages/About"));
+const Services = lazy(() => import("./pages/Services"));
+const Process = lazy(() => import("./pages/Process"));
+const Testimonials = lazy(() => import("./pages/Testimonials"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Cases = lazy(() => import("./pages/Cases"));
+const Blog = lazy(() => import("./pages/Blog"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const AdminDebug = lazy(() => import("./pages/AdminDebug"));
+const CMSDashboard = lazy(() => import("./pages/CMSDashboard"));
+const CMSPages = lazy(() => import("./pages/CMSPages"));
+const CMSServices = lazy(() => import("./pages/CMSServices"));
+const CMSCases = lazy(() => import("./pages/CMSCases"));
+const CMSBlogs = lazy(() => import("./pages/CMSBlogs"));
+const CMSBookings = lazy(() => import("./pages/CMSBookings"));
+const CMSContacts = lazy(() => import("./pages/CMSContacts"));
+const CMSMedia = lazy(() => import("./pages/CMSMedia"));
+const CMSSettings = lazy(() => import("./pages/CMSSettings"));
+const CMSSEO = lazy(() => import("./pages/CMSSEO"));
+const CMSMenus = lazy(() => import("./pages/CMSMenus"));
+const CMSFAQs = lazy(() => import("./pages/CMSFAQs"));
+const CMSHero = lazy(() => import("./pages/CMSHero"));
+const CMSFooter = lazy(() => import("./pages/CMSFooter"));
+const CMSReviews = lazy(() => import("./pages/CMSReviews"));
+const CMSPrices = lazy(() => import("./pages/CMSPrices"));
+const CMSUsers = lazy(() => import("./pages/CMSUsers"));
+const CMSCopywriting = lazy(() => import("./pages/CMSCopywriting"));
+const HRDashboard = lazy(() => import("./pages/hr/HRDashboard"));
+const HREmployees = lazy(() => import("./pages/hr/HREmployees"));
+const HRSchedule = lazy(() => import("./pages/hr/HRSchedule"));
+const HRAttendance = lazy(() => import("./pages/hr/HRAttendance"));
+const HROvertime = lazy(() => import("./pages/hr/HROvertime"));
+const HRPayroll = lazy(() => import("./pages/hr/HRPayroll"));
+const HRAdvances = lazy(() => import("./pages/hr/HRAdvances"));
+const HRCompensation = lazy(() => import("./pages/hr/HRCompensation"));
+const HRPayslip = lazy(() => import("./pages/hr/HRPayslip"));
+const HRReport = lazy(() => import("./pages/hr/HRReport"));
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-500">
+          載入頁面中…
+        </div>
+      }
+    >
+      <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/services"} component={Services} />
         <Route path={"/about"} component={About} />
@@ -100,6 +108,7 @@ function Router() {
         {/* Final fallback route */}
         <Route component={NotFound} />
       </Switch>
+    </Suspense>
   );
 }
 
